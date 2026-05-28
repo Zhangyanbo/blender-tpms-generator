@@ -1,0 +1,16 @@
+schema_version = "1.0.0"
+
+id = "tpms_generator"
+version = "1.0.0"
+name = "TPMS Generator"
+tagline = "Generate Triply Periodic Minimal Surfaces inside a target mesh"
+maintainer = "Yanbo Zhang <zhangybspm@gmail.com>"
+type = "add-on"
+
+tags = ["Mesh", "Geometry"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:MIT"]
+
+# This add-on only relies on numpy (bundled with Blender) and the standard bpy API.
