@@ -1,9 +1,9 @@
 schema_version = "1.0.0"
 
 id = "tpms_generator"
-version = "1.0.0"
-name = "TPMS Generator"
-tagline = "Generate Triply Periodic Minimal Surfaces inside a target mesh"
+version = "2.0.0"
+name = "Gyroid Generator"
+tagline = "Exact parametric Gyroid minimal surface as a clean quad mesh"
 maintainer = "Yanbo Zhang <zhangybspm@gmail.com>"
 type = "add-on"
 

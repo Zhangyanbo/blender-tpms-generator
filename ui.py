@@ -1,10 +1,10 @@
-"""UI panel for the TPMS Generator. Lives in the 3D View's N-panel."""
+"""UI panel for the Gyroid Generator. Lives in the 3D View's N-panel."""
 
 import bpy
 
 
 class TPMS_PT_panel(bpy.types.Panel):
-    bl_label = "TPMS Generator"
+    bl_label = "Gyroid Generator"
     bl_idname = "TPMS_PT_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -14,40 +14,24 @@ class TPMS_PT_panel(bpy.types.Panel):
         layout = self.layout
         p = context.scene.tpms_props
 
-        col = layout.column(align=True)
-        col.prop(p, "target")
-        col.prop(p, "tpms_type")
-
         box = layout.box()
         box.label(text="Lattice")
         box.prop(p, "cell_size")
-        box.prop(p, "iso_value", slider=True)
+
+        box = layout.box()
+        box.label(text="Tiling")
         row = box.row(align=True)
-        row.prop(p, "origin", text="")
-        box.prop(p, "rotation", text="Rotation")
+        row.prop(p, "cells_x")
+        row.prop(p, "cells_y")
+        row.prop(p, "cells_z")
+        box.label(text="(also editable on the Array modifiers)",
+                  icon='INFO')
 
         box = layout.box()
-        box.label(text="Solid")
-        box.prop(p, "solid_mode", expand=True)
-        sub = box.column()
-        sub.enabled = (p.solid_mode == 'SHELL')
-        sub.prop(p, "thickness", slider=True)
-
-        box = layout.box()
-        box.label(text="Sampling")
+        box.label(text="Quality")
         box.prop(p, "resolution")
-        box.prop(p, "project_iters")
-        box.prop(p, "padding")
-
-        box = layout.box()
-        box.label(text="Output")
-        box.prop(p, "clip_to_target")
-        sub = box.column()
-        sub.enabled = p.clip_to_target
-        sub.prop(p, "robust_clip")
-        sub.prop(p, "sdf_subsample")
-        sub.prop(p, "boundary_inset")
-        box.prop(p, "min_component_faces")
+        box.label(text=f"~{96 * int(p.resolution) ** 2} quads per cell",
+                  icon='MESH_GRID')
         box.prop(p, "smooth_shade")
 
         layout.separator()

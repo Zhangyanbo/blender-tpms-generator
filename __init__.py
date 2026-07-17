@@ -1,7 +1,9 @@
-"""TPMS Generator — Blender 4.2+ extension.
+"""Gyroid Generator — Blender 4.2+ extension.
 
-Generates Triply Periodic Minimal Surfaces (Gyroid, Schwarz P/D, Schoen IWP,
-Fischer-Koch S) as solid meshes inside a user-selected target mesh.
+Generates the exact Gyroid triply periodic minimal surface from its
+Enneper-Weierstrass parametrization (Gandy & Klinowski, Chem. Phys. Lett.
+321 (2000) 363-371) as a clean all-quad mesh: one cubic unit cell, tiled
+with Array modifiers.
 """
 
 from . import properties, operators, ui

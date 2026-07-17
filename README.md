@@ -1,217 +1,103 @@
-# TPMS Generator
+# Gyroid Generator
 
-> Blender 4.2+ extension that fills any target mesh with a solid Triply
-> Periodic Minimal Surface (Gyroid, Schwarz P, Schwarz D, Schoen IWP,
-> Fischer-Koch S).
+> Blender 4.2+ extension that generates the **exact Gyroid** triply periodic
+> minimal surface as a clean, all-quad mesh — one analytically parametrized
+> cubic unit cell, tiled with ordinary Array modifiers.
 
-A Blender 4.2+ 扩展插件，可在用户选定的目标网格内部，生成五种类型 TPMS
-（默认 Gyroid）的实体网格，参数可调。适用于轻量化结构、3D 打印晶格、
-仿生散热、骨支架等场景。
-
-![preview placeholder](docs/preview.png)
-
----
-
-## Features
-
-- **5 TPMS families** — Gyroid (default), Schwarz Primitive, Schwarz Diamond,
-  Schoen I-WP, Fischer-Koch S — all defined by their canonical level-set
-  equations.
-- **Two solid modes**:
-  - *Shell* — uniform wall thickness around `f = iso` (good for 3D printing,
-    heat exchangers).
-  - *Volume* — one phase (`f < iso`) as a solid (good for closed-cell
-    lattices).
-- **Field-domain clipping to the target** — combines the TPMS scalar field
-  with the target's signed distance field (`g = max(g_tpms, sd)`) instead
-  of a Boolean modifier. Works on non-closed targets like default Suzanne
-  (open neck, eye sockets, floating earring rings).
-- **5-ray majority in/out test** — robust against open caps and small holes.
-- **Two-pass SDF computation** — coarse sub-sampled grid + narrow-band
-  refinement at the iso-boundary; tractable for million-voxel grids.
-- **Analytic vertex projection** — after Naive Surface Nets extracts the
-  topology, each interior vertex is Newton-stepped onto the true analytic
-  iso-surface, giving clean geometry without the wobble of plain Surface
-  Nets.
-- **Connected-component filter** — drops boundary specks regardless of
-  where they came from.
-- **Pure Python + numpy** — no external dependencies, no Marching Cubes
-  lookup tables, no OpenVDB.
+Blender 4.2+ 扩展插件：基于 Gyroid 的 **Enneper–Weierstrass 精确参数化**
+（而非 `sin x cos y + …` 等值面近似）生成干净的全四边形网格。插件生成一个
+完整立方晶胞，然后用 Blender 自带的 Array 修改器无缝平铺。每个顶点都严格
+落在真正的极小曲面上（平均曲率恒为零），四边形沿曲面天然参数线分布。
 
 ---
 
-## Installation
+## Usage / 用法
 
-### From a local folder (recommended for now)
+1. Install the add-on (Edit → Preferences → Add-ons → Install from Disk).
+2. 3D viewport N-panel → **TPMS** tab.
+3. Set *Cell Size*, *Cells X/Y/Z*, *Resolution* → **Generate Gyroid**.
 
-1. Clone or download this repository to a known location.
-2. In Blender: **Edit → Preferences → Extensions → ▼ (top-right) →
-   Install from Disk…**
-3. Select the project folder (the one containing `blender_manifest.toml`)
-   or zip it first and pick the `.zip`.
-4. Enable **TPMS Generator** in the extensions list.
+The result is one unit-cell mesh plus three Array modifiers. Cell counts are
+editable live on the modifiers; apply them when you want a single mesh.
+Because the cell boundary is periodic to ~1e-9 of the cell size, the merged
+tiles are seamless and watertight across cell boundaries.
 
-### Updating after editing the source
+- **Resolution** — quads per fundamental-patch edge. One cell = 96 patches
+  = `96 × res²` quads (res 8 → 6144). Vertices are exact at any resolution;
+  raise res only for smoother silhouettes.
+- **Smooth Shading** — uses exact analytic normals (the Gauss map of the
+  Weierstrass data), not averaged face normals.
 
-Blender will **not** automatically re-import a running add-on. After
-editing any `.py` file:
+## The mathematics / 数学原理
 
-- Disable the add-on (click ✓ to ✗), then re-enable it, **or**
-- Restart Blender.
+Based on P.J.F. Gandy & J. Klinowski, *Exact computation of the triply
+periodic G ('Gyroid') minimal surface*, Chem. Phys. Lett. **321** (2000)
+363–371. [doi:10.1016/S0009-2614(00)00373-0](https://doi.org/10.1016/S0009-2614(00)00373-0)
+([PDF](https://mathcurve.com/surfaces.gb/Gyroide/sdarticle%20gyroid.pdf))
 
----
-
-## Usage
-
-1. Select (or create) a closed-ish mesh to use as the *container* — for
-   example a Suzanne head, an imported STL, or a primitive cube.
-2. Open the 3D View → **N panel → TPMS tab**.
-3. Set **Target Mesh** to your container.
-4. Pick a **Type** (default Gyroid).
-5. Tune **Cell Size**, **Iso Value**, **Wall Thickness**.
-6. Click **Generate TPMS**.
-
-The new mesh `TPMS_<type>` is added to the active collection.
-
----
-
-## Parameters
-
-### Lattice
-
-| Parameter      | What it controls |
-| -------------- | ---------------- |
-| **Cell Size**  | World-space length of one TPMS period (one `2π` cycle). |
-| **Iso Value**  | Level-set constant `c`. `0` ≈ equal phase volumes; ±values shift the volume fraction. Range roughly ±1.2. |
-| **Origin**     | Phase-shift the lattice. Useful for tiling alignment. |
-| **Rotation**   | Rotate the lattice independently of the target. |
-
-### Solid
-
-| Parameter         | What it controls |
-| ----------------- | ---------------- |
-| **Mode**          | *Shell* — `\|f − iso\| − thickness` (closed double sheet). *Volume* — one phase (`f < iso`) of the TPMS. |
-| **Wall Thickness**| For Shell mode. In *field units* (Schwarz P has range ±3, Gyroid ±1.5, etc.). Try 0.2–0.5 for thin lattice walls. |
-
-### Sampling
-
-| Parameter             | What it controls |
-| --------------------- | ---------------- |
-| **Resolution / Cell** | Voxels per TPMS period along each axis. 24–48 is a good range. |
-| **Surface Snap Iters**| Newton iterations that project each Surface-Nets vertex onto the analytic iso-surface. 2–3 is plenty. `0` disables (raw Surface Nets, blurry). |
-| **BBox Padding**      | Extra space around the target's bounding box before sampling. |
-
-### Output
-
-| Parameter              | What it controls |
-| ---------------------- | ---------------- |
-| **Clip to Target**     | If on, the TPMS is restricted to the target's interior via the SDF combination. If off, the raw TPMS is returned with a bbox cap. |
-| **Robust In/Out Test** | Use 5-ray majority-vote parity for inside/outside. Slower but mandatory for concave or non-closed targets. |
-| **SDF Subsample**      | Compute the target's SDF on every Nth voxel, then refine the narrow boundary band. `4` is a good default; lower for crisper boundary. |
-| **Boundary Inset**     | Shrink the target by N voxels before clipping. Use 0.5–1.5 to hide any residual fuzz. |
-| **Min Component Faces**| Drop isolated mesh fragments smaller than this many quads. 200 is the default; the legitimate TPMS body is always 10⁴–10⁵ quads. |
-| **Smooth Shading**     | Apply smooth shading to the generated mesh. |
-
----
-
-## How it works
+The Gyroid is the Bonnet associate of the Schwarz D/P family with
+Weierstrass function
 
 ```
-target mesh
-    │
-    │  BVH (mathutils.bvhtree)
-    ▼
-signed distance field  sd(x,y,z)         analytic TPMS field  f(x,y,z)
-   (5-ray majority in/out,                 (sin/cos formulas,
-    coarse + boundary refinement)           per-type scalar field)
-    │                                       │
-    │            shell:  g_tpms = |f − iso| − thickness
-    │            volume: g_tpms = f − iso
-    │                                       │
-    └──────────►  g = max(g_tpms, sd)  ◄────┘
-                       │
-                       │  Naive Surface Nets (custom)
-                       ▼
-                  quad mesh of g = 0
-                       │
-                       │  Newton iterations against ∇f
-                       ▼
-                vertices snapped onto the analytic iso-surface
-                       │
-                       │  Union-find connected components
-                       ▼
-                final manifold quad mesh
+R(τ) = 1 / √(τ⁸ − 14τ⁴ + 1)
 ```
 
-The TPMS surfaces are implicit (level-set), not parametric — there's no
-closed-form `(u,v) → ℝ³` mapping. So the pipeline is fundamentally
-"sample a scalar field on a regular grid, extract an iso-surface". Mesh
-quality therefore scales with the sampling resolution and the cleanliness
-of the iso-surface extractor.
-
-The choice of Naive Surface Nets + analytic vertex projection (over
-Marching Cubes) gives:
-
-- Similar surface accuracy to MC at the saddles that dominate TPMS
-  topology.
-- A ~10× shorter implementation (no 256×16 triangle table).
-- Quad output (better than MC's triangles for downstream subdivision /
-  remeshing).
-
-Field-domain clipping (instead of a `Boolean INTERSECT` modifier) is what
-makes the plugin survive on default Suzanne and other "almost-closed"
-meshes that EXACT Boolean falls apart on.
-
----
-
-## TPMS equations
-
-All five surfaces are written here in lattice coordinates (one period =
-`2π`):
+and Bonnet angle `θ = arccot(K′/K) ≈ 38.0147740°` (`K = K(m=1/4)`,
+`K′ = K(m=3/4)`, computed by the AGM). The surface is
 
 ```
-Gyroid          : sin x · cos y + sin y · cos z + sin z · cos x
-Schwarz P       : cos x + cos y + cos z
-Schwarz D       : sin x sin y sin z + sin x cos y cos z
-                + cos x sin y cos z + cos x cos y sin z
-Schoen I-WP     : 2 (cos x cos y + cos y cos z + cos z cos x)
-                − (cos 2x + cos 2y + cos 2z)
-Fischer-Koch S  : cos 2x sin y cos z + cos x cos 2y sin z
-                + sin x cos y cos 2z
+r(ω) = Re [ e^{iθ} ∫₀^ω (1−τ², i(1+τ²), 2τ) R(τ) dτ ]
 ```
 
----
+over the fundamental domain bounded by the two coordinate axes and the arc
+`|ω + (1+i)/√2| = √2`, with corners `O = 0`, `P = (√3−1)/√2`, `R = iP`
+(P, R are branch points of `R(τ)` — flat points of the surface).
 
-## Limitations / known issues
+Implementation details:
 
-- The BVH SDF pass is a Python loop — large meshes × high resolution can
-  take 10–30 s. If it feels slow, drop **Resolution / Cell** to 28–32
-  while you're tuning, then crank it up for the final render.
-- Open targets with very thin walls (single-sided sheets) can still
-  confuse the in/out test in places; the component filter is the safety
-  net.
-- The mesh is closed and manifold for downstream Boolean / Solidify /
-  Subdivide use, but is **not** guaranteed to have well-formed normals
-  across all saddles. Apply *Shade Smooth* and (optionally) *Mesh →
-  Normals → Recalculate Outside* if your renderer cares.
+- The curved-triangle domain is treated as a curved quad `O–P–Q–R`
+  (Q = arc midpoint) and mapped from the unit square by a **Coons patch**,
+  so the regular `(u,v)` grid becomes the quad mesh of the surface.
+- Integrals use composite 16-point **Gauss–Legendre** quadrature marched
+  across the grid. Segments near branch points are integrated in the local
+  chart `ζ = √(τ − branch)` where the integrand is analytic — full accuracy
+  at the singular corners.
+- The 96 isometries (space group *Ia3̄d*, No. 230) assembling the patch into
+  one cubic cell were **derived numerically, not copied from the paper**:
+  the surface was analytically continued across the three patch boundary
+  curves; the three side-pairing isometries were extracted by Procrustes
+  fits (residual ~1e-9); the space group was generated by composition; the
+  cubic lattice was read off from its pure translations. (The paper's own
+  assembly tables rest on an internally inconsistent frame description —
+  e.g. the true cubic period is 4a in the paper's notation, not 2a.) In the
+  final frame every operation is exact: signed permutation matrices with
+  translations in eighths of the cell.
+- The cell is aligned with the level-set convention: it matches
+  `sin x cos y + sin y cos z + sin z cos x = 0` (coordinates in `2π / cell`
+  units) up to the true deviation of that approximation (mean |F| ≈ 0.0066).
 
----
+Verified properties of the emitted mesh:
+
+| check | result |
+|---|---|
+| faces | 100 % quads, zero degenerate |
+| orientation | globally consistent, zero flipped faces |
+| minimality | numeric mean curvature ≈ 0 (finite-difference check) |
+| periodicity | boundary vertices match partners mod cell to ~1e-9 |
+| seams | all interior patch boundaries weld exactly |
+
+## Files
+
+- `gyroid.py` — pure-numpy core: Weierstrass integration, Coons domain,
+  space-group table, unit-cell assembly. Importable and testable outside
+  Blender.
+- `operators.py` — `tpms.generate`: builds the mesh object + Array stack.
+- `properties.py`, `ui.py` — settings and N-panel.
+
+Other TPMS families (Schwarz P/D, Schoen IWP, Fischer-Koch S) were removed
+in v2.0. They may return later on the same exact-parametrization footing —
+D and P share the same Weierstrass function with Bonnet angles 90° and 0°.
 
 ## License
 
-[MIT](LICENSE).
-
-> ⚠️ Note: the Blender Foundation's legal FAQ argues that add-ons calling
-> the `bpy` Python API are derivative works of Blender and should
-> therefore be GPL-2.0-or-later. This is a long-standing grey area for
-> Python add-ons and is rarely enforced in practice. If you redistribute
-> this add-on alongside Blender you may want to switch the license to
-> GPL-2.0-or-later to stay on the conservative side.
-
----
-
-## Acknowledgements
-
-- TPMS equations: Schoen (NASA TN D-5541, 1970), Schwarz, Fischer-Koch.
-- Surface Nets: S. F. Gibson, *Constrained elastic surface nets*, MERL TR
-  98-19 (1998).
+MIT
