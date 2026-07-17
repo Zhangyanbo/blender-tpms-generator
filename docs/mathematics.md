@@ -37,7 +37,7 @@ and the surface is the real part of a contour integral in the complex
 plane,
 
 $$
-\mathbf{r}(\omega) = \operatorname{Re}\left[
+\mathbf{r}(\omega) = \mathrm{Re}\left[
   e^{i\theta} \int_0^{\omega}
   \bigl(1-\tau^2,\; i(1+\tau^2),\; 2\tau\bigr)\, R(\tau)\, d\tau
 \right],
@@ -47,7 +47,7 @@ with Bonnet angles
 
 $$
 \theta_D = 0, \qquad
-\theta_G = \operatorname{arccot}\frac{K'}{K} \approx 38.0147740^\circ,
+\theta_G = \mathrm{arccot}\,\frac{K'}{K} \approx 38.0147740^\circ,
 \qquad
 \theta_P = \frac{\pi}{2},
 $$
@@ -79,8 +79,8 @@ $P$ and $R$ are branch points of $R(\tau)$ — flat points of the surface.
   is the inverse stereographic image
 
 $$
-\mathbf{n}(\omega) = \frac{\bigl(2\operatorname{Re}\omega,\;
-2\operatorname{Im}\omega,\; \lvert\omega\rvert^2 - 1\bigr)}
+\mathbf{n}(\omega) = \frac{\bigl(2\mathrm{Re}\omega,\;
+2\mathrm{Im}\omega,\; \lvert\omega\rvert^2 - 1\bigr)}
 {1 + \lvert\omega\rvert^2} .
 $$
 
@@ -127,7 +127,7 @@ $$
 ### Alignment with the level-set conventions
 
 Each cell is aligned with its standard nodal (level-set) approximation,
-with coordinates in units of $2\pi/\text{cell}$. The residual mean
+with coordinates in units of $2\pi/L$, where $L$ is the cell edge. The residual mean
 $\lvert F\rvert$ on the exact surface is the true deviation of those
 approximations:
 
@@ -194,7 +194,7 @@ $$
 曲面是复平面上路径积分的实部：
 
 $$
-\mathbf{r}(\omega) = \operatorname{Re}\left[
+\mathbf{r}(\omega) = \mathrm{Re}\left[
   e^{i\theta} \int_0^{\omega}
   \bigl(1-\tau^2,\; i(1+\tau^2),\; 2\tau\bigr)\, R(\tau)\, d\tau
 \right],
@@ -204,7 +204,7 @@ Bonnet 角分别为
 
 $$
 \theta_D = 0, \qquad
-\theta_G = \operatorname{arccot}\frac{K'}{K} \approx 38.0147740^\circ,
+\theta_G = \mathrm{arccot}\,\frac{K'}{K} \approx 38.0147740^\circ,
 \qquad
 \theta_P = \frac{\pi}{2},
 $$
@@ -232,8 +232,8 @@ $P$、$R$ 是 $R(\tau)$ 的分支点——曲面的平点。
 - 法向来自 Gauss 映射：参数 $\omega$ 处的单位法向是逆球极投影
 
 $$
-\mathbf{n}(\omega) = \frac{\bigl(2\operatorname{Re}\omega,\;
-2\operatorname{Im}\omega,\; \lvert\omega\rvert^2 - 1\bigr)}
+\mathbf{n}(\omega) = \frac{\bigl(2\mathrm{Re}\omega,\;
+2\mathrm{Im}\omega,\; \lvert\omega\rvert^2 - 1\bigr)}
 {1 + \lvert\omega\rvert^2} .
 $$
 
@@ -270,8 +270,7 @@ $$
 
 ### 与等值面约定的对齐
 
-每个晶胞都与其标准 nodal（等值面）近似对齐，坐标以 $2\pi/\text{晶胞}$
-为单位。精确曲面上的残差 mean $\lvert F\rvert$ 就是这些近似的真实误差：
+每个晶胞都与其标准 nodal（等值面）近似对齐，坐标以 $2\pi/L$ 为单位（$L$ 为晶胞边长）。精确曲面上的残差 mean $\lvert F\rvert$ 就是这些近似的真实误差：
 
 | 曲面 | nodal 近似 $F$ | mean $\lvert F\rvert$ |
 |---|---|---|
