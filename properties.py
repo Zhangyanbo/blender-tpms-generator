@@ -1,18 +1,38 @@
-"""Scene-level properties for the Gyroid Generator add-on."""
+"""Scene-level properties for the TPMS Generator add-on."""
 
 import bpy
 from bpy.props import (
     BoolProperty,
+    EnumProperty,
     FloatProperty,
     IntProperty,
     PointerProperty,
 )
 
 
+TPMS_TYPES = [
+    ('GYROID', "Gyroid",
+     "Schoen G surface (Ia-3d): exact Enneper-Weierstrass parametrization, "
+     "96 patches per cell"),
+    ('SCHWARZ_P', "Schwarz Primitive",
+     "Schwarz P surface (Im-3m): exact parametrization, 48 patches per cell"),
+    ('SCHWARZ_D', "Schwarz Diamond",
+     "Schwarz D surface (Fd-3m): exact parametrization, 192 patches per cell"),
+]
+
+
 class TPMSProperties(bpy.types.PropertyGroup):
+    tpms_type: EnumProperty(
+        name="Type",
+        description="Which TPMS to generate (all from their exact "
+                    "Enneper-Weierstrass parametrizations)",
+        items=TPMS_TYPES,
+        default='GYROID',
+    )
+
     cell_size: FloatProperty(
         name="Cell Size",
-        description="World-unit edge length of one cubic Gyroid unit cell",
+        description="World-unit edge length of one cubic TPMS unit cell",
         default=1.0, min=0.001, soft_max=10.0,
         unit='LENGTH',
     )
@@ -39,10 +59,10 @@ class TPMSProperties(bpy.types.PropertyGroup):
 
     resolution: IntProperty(
         name="Resolution",
-        description="Quads per fundamental-patch edge. The unit cell is "
-                    "assembled from 96 patches, so it has 96 x res^2 quads "
-                    "(res 8 = 6144 quads). Every vertex lies on the exact "
-                    "minimal surface, so even low resolutions are accurate",
+        description="Quads per fundamental-patch edge. The unit cell has "
+                    "(patches x res^2) quads with 96/48/192 patches for "
+                    "Gyroid/P/D. Every vertex lies on the exact minimal "
+                    "surface, so even low resolutions are accurate",
         default=8, min=2, soft_max=32,
     )
 

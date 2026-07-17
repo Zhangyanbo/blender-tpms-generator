@@ -1,13 +1,15 @@
-# Gyroid Generator
+# TPMS Generator
 
-> Blender 4.2+ extension that generates the **exact Gyroid** triply periodic
-> minimal surface as a clean, all-quad mesh — one analytically parametrized
-> cubic unit cell, tiled with ordinary Array modifiers.
+> Blender 4.2+ extension that generates **exact** triply periodic minimal
+> surfaces — Gyroid, Schwarz P and Schwarz D — as clean, all-quad meshes:
+> one analytically parametrized cubic unit cell, tiled with ordinary Array
+> modifiers.
 
-Blender 4.2+ 扩展插件：基于 Gyroid 的 **Enneper–Weierstrass 精确参数化**
-（而非 `sin x cos y + …` 等值面近似）生成干净的全四边形网格。插件生成一个
-完整立方晶胞，然后用 Blender 自带的 Array 修改器无缝平铺。每个顶点都严格
-落在真正的极小曲面上（平均曲率恒为零），四边形沿曲面天然参数线分布。
+Blender 4.2+ 扩展插件：基于 **Enneper–Weierstrass 精确参数化**（而非
+`sin x cos y + …` 等值面近似）生成 Gyroid、Schwarz P、Schwarz D 三种极小
+曲面的干净全四边形网格。插件生成一个完整立方晶胞，然后用 Blender 自带的
+Array 修改器无缝平铺。每个顶点都严格落在真正的极小曲面上（平均曲率恒为
+零），四边形沿曲面天然参数线分布。
 
 ---
 
@@ -15,35 +17,54 @@ Blender 4.2+ 扩展插件：基于 Gyroid 的 **Enneper–Weierstrass 精确参�
 
 1. Install the add-on (Edit → Preferences → Add-ons → Install from Disk).
 2. 3D viewport N-panel → **TPMS** tab.
-3. Set *Cell Size*, *Cells X/Y/Z*, *Resolution* → **Generate Gyroid**.
+3. Choose *Type* (Gyroid / Schwarz P / Schwarz D), set *Cell Size*,
+   *Cells X/Y/Z*, *Resolution* → **Generate TPMS**.
 
 The result is one unit-cell mesh plus three Array modifiers. Cell counts are
 editable live on the modifiers; apply them when you want a single mesh.
 Because the cell boundary is periodic to ~1e-9 of the cell size, the merged
 tiles are seamless and watertight across cell boundaries.
 
-- **Resolution** — quads per fundamental-patch edge. One cell = 96 patches
-  = `96 × res²` quads (res 8 → 6144). Vertices are exact at any resolution;
+Note on block edges: the cell is one exact translational unit built from
+*whole* fundamental patches, not a box-clipped chunk. Schwarz D patches end
+exactly on the cell faces and the Gyroid's overhang is negligible, so their
+blocks look box-clean. Schwarz P patches straddle the cell faces (P embeds
+straight lines such as `(t, t+1/2, 1/4)·L` that pierce them), so a finite P
+block has a ragged skin even though the tiling itself is exactly seamless —
+trim with a Boolean if you need a flat-cut block.
+
+- **Resolution** — quads per fundamental-patch edge. One cell =
+  `patches × res²` quads with 96 / 48 / 192 patches for Gyroid / P / D
+  (res 8 → 6144 / 3072 / 12288). Vertices are exact at any resolution;
   raise res only for smoother silhouettes.
 - **Smooth Shading** — uses exact analytic normals (the Gauss map of the
   Weierstrass data), not averaged face normals.
 
 ## The mathematics / 数学原理
 
-Based on P.J.F. Gandy & J. Klinowski, *Exact computation of the triply
-periodic G ('Gyroid') minimal surface*, Chem. Phys. Lett. **321** (2000)
-363–371. [doi:10.1016/S0009-2614(00)00373-0](https://doi.org/10.1016/S0009-2614(00)00373-0)
-([PDF](https://mathcurve.com/surfaces.gb/Gyroide/sdarticle%20gyroid.pdf))
+Based on the exact-computation series by Klinowski and co-workers:
 
-The Gyroid is the Bonnet associate of the Schwarz D/P family with
-Weierstrass function
+- **Gyroid** — P.J.F. Gandy, J. Klinowski, *Exact computation of the triply
+  periodic G ('Gyroid') minimal surface*, Chem. Phys. Lett. **321** (2000)
+  363–371. [doi:10.1016/S0009-2614(00)00373-0](https://doi.org/10.1016/S0009-2614(00)00373-0)
+  ([PDF](https://mathcurve.com/surfaces.gb/Gyroide/sdarticle%20gyroid.pdf))
+- **Schwarz P** — P.J.F. Gandy, J. Klinowski, *Exact computation of the
+  triply periodic Schwarz P minimal surface*, Chem. Phys. Lett. **322**
+  (2000) 579–586. [doi:10.1016/S0009-2614(00)00453-X](https://doi.org/10.1016/S0009-2614(00)00453-X)
+  ([PDF](https://www.mathcurve.com/surfaces.gb/schwarz/sdarticle.pdf))
+- **Schwarz D** — P.J.F. Gandy, D. Cvijović, A.L. Mackay, J. Klinowski,
+  *Exact computation of the triply periodic D ('diamond') minimal surface*,
+  Chem. Phys. Lett. **314** (1999) 543–551. [doi:10.1016/S0009-2614(99)01000-3](https://doi.org/10.1016/S0009-2614(99)01000-3)
+
+All three surfaces are Bonnet associates sharing one Weierstrass function
 
 ```
 R(τ) = 1 / √(τ⁸ − 14τ⁴ + 1)
 ```
 
-and Bonnet angle `θ = arccot(K′/K) ≈ 38.0147740°` (`K = K(m=1/4)`,
-`K′ = K(m=3/4)`, computed by the AGM). The surface is
+with Bonnet angles `θ_D = 0°`, `θ_G = arccot(K′/K) ≈ 38.0147740°`,
+`θ_P = 90°` (`K = K(m=1/4)`, `K′ = K(m=3/4)`, computed by the AGM). The
+surface is
 
 ```
 r(ω) = Re [ e^{iθ} ∫₀^ω (1−τ², i(1+τ²), 2τ) R(τ) dτ ]
@@ -62,41 +83,61 @@ Implementation details:
   across the grid. Segments near branch points are integrated in the local
   chart `ζ = √(τ − branch)` where the integrand is analytic — full accuracy
   at the singular corners.
-- The 96 isometries (space group *Ia3̄d*, No. 230) assembling the patch into
-  one cubic cell were **derived numerically, not copied from the paper**:
-  the surface was analytically continued across the three patch boundary
-  curves; the three side-pairing isometries were extracted by Procrustes
-  fits (residual ~1e-9); the space group was generated by composition; the
-  cubic lattice was read off from its pure translations. (The paper's own
-  assembly tables rest on an internally inconsistent frame description —
-  e.g. the true cubic period is 4a in the paper's notation, not 2a.) In the
-  final frame every operation is exact: signed permutation matrices with
-  translations in eighths of the cell.
-- The cell is aligned with the level-set convention: it matches
-  `sin x cos y + sin y cos z + sin z cos x = 0` (coordinates in `2π / cell`
-  units) up to the true deviation of that approximation (mean |F| ≈ 0.0066).
+- The isometries assembling the patch into one cubic cell were **derived
+  numerically, not copied from the papers**: the surface was analytically
+  continued across the three patch boundary curves; the side-pairing
+  isometries were extracted by Procrustes fits (residual ~1e-9); the space
+  group was generated by composition; the cubic lattice was read off from
+  its pure translations. (The papers' own assembly tables rest on
+  internally inconsistent frame descriptions — e.g. the Gyroid's true cubic
+  period is 4a in the paper's notation, not 2a.) This reproduces the
+  expected crystallography exactly:
+
+  | surface | space group | patches / cell | lattice |
+  |---|---|---|---|
+  | Gyroid | *Ia3̄d* (230) | 96 | bcc |
+  | Schwarz P | *Im3̄m* (229) | 48 | bcc |
+  | Schwarz D | *Fd3̄m* (227) | 192 | fcc |
+
+  For P and D the fundamental patch carries an internal 2-fold symmetry
+  (it spans two asymmetric units); the pipeline detects the stabilizer and
+  quotients it out, so no face is emitted twice. Each operation also
+  carries an orientation sign — whether it swaps the two sides of the
+  surface — which for P/D is *not* the determinant (their groups contain
+  in-surface 2-fold axes and surface-orthogonal mirrors), so it is measured
+  during derivation and stored in the table.
+- The cubic lattice constants come out as exact elliptic-integral
+  expressions (matching the integration to ~1e-9): `L_P = K′`, `L_D = 2K`,
+  `L_G = 2KK′ / √(K² + K′²)` in κ=1 integration units.
+- Each cell is aligned with its standard level-set convention (coordinates
+  in `2π / cell` units), up to the true deviation of those nodal
+  approximations: Gyroid `sin x cos y + sin y cos z + sin z cos x`
+  (mean |F| ≈ 0.007), P `cos x + cos y + cos z` (≈ 0.045), D
+  `sin x sin y sin z + sin x cos y cos z + cos x sin y cos z + cos x cos y sin z`
+  (≈ 0.002).
 
 Verified properties of the emitted mesh:
 
-| check | result |
+| check | result (all three surfaces) |
 |---|---|
 | faces | 100 % quads, zero degenerate |
-| orientation | globally consistent, zero flipped faces |
+| orientation | globally consistent — on the 3-torus every directed edge appears exactly once |
 | minimality | numeric mean curvature ≈ 0 (finite-difference check) |
-| periodicity | boundary vertices match partners mod cell to ~1e-9 |
-| seams | all interior patch boundaries weld exactly |
+| periodicity | on the 3-torus every edge borders exactly 2 quads (no gaps, no overlaps) |
+| seams | all interior patch boundaries weld exactly (~1e-9) |
 
 ## Files
 
-- `gyroid.py` — pure-numpy core: Weierstrass integration, Coons domain,
-  space-group table, unit-cell assembly. Importable and testable outside
-  Blender.
+- `weierstrass.py` — pure-numpy core: Weierstrass integration, Coons
+  domain, per-surface space-group tables, unit-cell assembly. Importable
+  and testable outside Blender.
 - `operators.py` — `tpms.generate`: builds the mesh object + Array stack.
 - `properties.py`, `ui.py` — settings and N-panel.
 
-Other TPMS families (Schwarz P/D, Schoen IWP, Fischer-Koch S) were removed
-in v2.0. They may return later on the same exact-parametrization footing —
-D and P share the same Weierstrass function with Bonnet angles 90° and 0°.
+Schoen I-WP and F-RD have no published exact parametrization from this
+series (only nodal approximations); adding them would require deriving
+Weierstrass data with cube-root branch points — possible future work on
+the same footing.
 
 ## License
 

@@ -1,10 +1,11 @@
-"""Gyroid generation operator.
+"""TPMS generation operator.
 
 Pipeline
 --------
-1. `gyroid.build_unit_cell` evaluates the exact Enneper-Weierstrass
-   parametrization of the Gyroid on a Coons-patch grid and assembles one
-   cubic unit cell (96 fundamental patches) as a welded all-quad mesh.
+1. `weierstrass.build_unit_cell` evaluates the exact Enneper-Weierstrass
+   parametrization of the chosen surface (Gyroid / Schwarz P / Schwarz D)
+   on a Coons-patch grid and assembles one cubic unit cell as a welded
+   all-quad mesh.
    Every vertex lies on the exact minimal surface and boundary vertices
    match their periodic partners to ~1e-9 of the cell.
 2. Three Array modifiers (X, Y, Z) with vertex merging tile the cell.
@@ -17,7 +18,7 @@ import bpy
 import numpy as np
 from mathutils import Vector
 
-from . import gyroid
+from . import weierstrass
 
 
 def _make_quad_mesh_object(name, verts, quads, normals, collection, smooth):
@@ -64,9 +65,9 @@ def _add_array_modifier(obj, name, count, offset_vec, merge_threshold):
 
 
 class TPMS_OT_generate(bpy.types.Operator):
-    """Generate one exact Gyroid unit cell + Array modifiers for tiling"""
+    """Generate one exact TPMS unit cell + Array modifiers for tiling"""
     bl_idname = "tpms.generate"
-    bl_label = "Generate Gyroid"
+    bl_label = "Generate TPMS"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -74,12 +75,14 @@ class TPMS_OT_generate(bpy.types.Operator):
         cs = float(props.cell_size)
 
         t0 = time.perf_counter()
-        verts, quads, normals = gyroid.build_unit_cell(
-            cell_size=cs, res=int(props.resolution))
+        verts, quads, normals = weierstrass.build_unit_cell(
+            tpms_type=props.tpms_type, cell_size=cs,
+            res=int(props.resolution))
         dt_build = time.perf_counter() - t0
 
+        name = f"TPMS_{props.tpms_type.title()}"
         obj = _make_quad_mesh_object(
-            "Gyroid", verts, quads, normals, context.collection,
+            name, verts, quads, normals, context.collection,
             props.smooth_shade)
 
         merge_thr = max(cs * 1e-5, 1e-8)
@@ -97,7 +100,7 @@ class TPMS_OT_generate(bpy.types.Operator):
         dt = time.perf_counter() - t0
         self.report(
             {'INFO'},
-            f"Gyroid cell: {len(verts)}v / {len(quads)} quads, all on the "
+            f"{name}: {len(verts)}v / {len(quads)} quads, all on the "
             f"exact minimal surface (build {dt_build:.2f}s, total {dt:.2f}s). "
             f"Tiled {props.cells_x}x{props.cells_y}x{props.cells_z}."
         )

@@ -1,10 +1,10 @@
-"""UI panel for the Gyroid Generator. Lives in the 3D View's N-panel."""
+"""UI panel for the TPMS Generator. Lives in the 3D View's N-panel."""
 
 import bpy
 
 
 class TPMS_PT_panel(bpy.types.Panel):
-    bl_label = "Gyroid Generator"
+    bl_label = "TPMS Generator"
     bl_idname = "TPMS_PT_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -13,6 +13,8 @@ class TPMS_PT_panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         p = context.scene.tpms_props
+
+        layout.prop(p, "tpms_type")
 
         box = layout.box()
         box.label(text="Lattice")
@@ -30,7 +32,9 @@ class TPMS_PT_panel(bpy.types.Panel):
         box = layout.box()
         box.label(text="Quality")
         box.prop(p, "resolution")
-        box.label(text=f"~{96 * int(p.resolution) ** 2} quads per cell",
+        patches = {'GYROID': 96, 'SCHWARZ_P': 48, 'SCHWARZ_D': 192}
+        npatch = patches.get(p.tpms_type, 96)
+        box.label(text=f"~{npatch * int(p.resolution) ** 2} quads per cell",
                   icon='MESH_GRID')
         box.prop(p, "smooth_shade")
 
