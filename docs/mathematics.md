@@ -67,14 +67,13 @@ $P$ and $R$ are branch points of $R(\tau)$ — flat points of the surface.
 
 ### Discretization
 
-- The curved-triangle domain is treated as a curved quad $O\!-\!P\!-\!Q\!-\!R$
-  ($Q$ = arc midpoint) and mapped from the unit square by a **Coons
-  patch**, so the regular $(u,v)$ grid becomes the quad mesh of the
-  surface.
-- Integrals use composite 16-point **Gauss–Legendre** quadrature marched
-  across the grid. Segments near a branch point $b$ are integrated in
-  the local chart $\zeta = \sqrt{\tau - b}$, where the integrand is
-  analytic — full accuracy at the singular corners.
+- For Gyroid, the 96 curved fundamental triangles are paired along their
+  circular edges into 48 genuine four-sided macro patches. A cotangent
+  harmonic map gives every macro patch a smooth square parameter domain;
+  the paired circular edge is internal and is not emitted as a mesh edge.
+- Gyroid radial integrals use endpoint-regularized 200-point
+  **Gauss–Legendre** quadrature with continuous complex square-root branches.
+  P and D retain their exact Coons-patch integration path.
 - Normals come from the Gauss map: the unit normal at parameter $\omega$
   is the inverse stereographic image
 
@@ -99,7 +98,7 @@ crystallography exactly:
 
 | surface | space group | patches / cell | lattice |
 |---|---|---|---|
-| Gyroid | $Ia\bar3d$ (230) | 96 | bcc |
+| Gyroid | $Ia\bar3d$ (230) | 96 triangles / 48 macro quads | bcc |
 | Schwarz P | $Im\bar3m$ (229) | 48 | bcc |
 | Schwarz D | $Fd\bar3m$ (227) | 192 | fcc |
 
@@ -149,9 +148,9 @@ approximations:
 
 ### Code layout
 
-- `weierstrass.py` — pure-numpy core: Weierstrass integration, Coons
-  domain, per-surface space-group tables, unit-cell assembly. Importable
-  and testable outside Blender.
+- `gyroid_macro.py` — exact Gyroid integration, automatic triangle pairing,
+  harmonic reparameterization, welding, orientation, and topology checks.
+- `weierstrass.py` — shared entry point plus the existing exact P/D path.
 - `operators.py` — `tpms.generate`: builds the mesh object + Array stack.
 - `properties.py`, `ui.py` — settings and N-panel.
 
@@ -223,12 +222,11 @@ $P$、$R$ 是 $R(\tau)$ 的分支点——曲面的平点。
 
 ### 离散化
 
-- 曲边三角域被视为曲边四边形 $O\!-\!P\!-\!Q\!-\!R$（$Q$ 为弧中点），用
-  **Coons patch** 从单位正方形映射，正方形的规则 $(u,v)$ 网格直接成为曲
-  面的四边形网格。
-- 积分采用逐段推进的 16 点 **Gauss–Legendre** 复合求积。靠近分支点 $b$
-  的线段换到局部坐标 $\zeta = \sqrt{\tau - b}$ 中积分（被积函数在该坐标
-  下解析），奇异角点处不损失精度。
+- Gyroid 的 96 张曲边基本三角片沿圆弧边两两配对，形成 48 张真正的四边
+  宏观片。余切调和映射为每张宏观片建立光滑的正方形参数域；配对圆弧成为
+  片内曲线，不作为网格边输出。
+- Gyroid 的径向积分使用端点正则化的 200 点 **Gauss–Legendre** 求积，并连续选择
+  复平方根分支。P 和 D 保留原有的精确 Coons 参数片路径。
 - 法向来自 Gauss 映射：参数 $\omega$ 处的单位法向是逆球极投影
 
 $$
@@ -247,7 +245,7 @@ $\sim 10^{-9}$），复合生成空间群，再从纯平移读出立方晶格。
 
 | 曲面 | 空间群 | 片数/晶胞 | 晶格 |
 |---|---|---|---|
-| Gyroid | $Ia\bar3d$ (230) | 96 | 体心 |
+| Gyroid | $Ia\bar3d$ (230) | 96 三角片 / 48 宏观四边片 | 体心 |
 | Schwarz P | $Im\bar3m$ (229) | 48 | 体心 |
 | Schwarz D | $Fd\bar3m$ (227) | 192 | 面心 |
 
@@ -290,8 +288,9 @@ $$
 
 ### 代码结构
 
-- `weierstrass.py` —— 纯 numpy 核心：Weierstrass 积分、Coons 参数域、
-  各曲面的空间群表、晶胞组装。可在 Blender 外独立导入和测试。
+- `gyroid_macro.py` —— Gyroid 精确积分、三角片自动配对、调和重参数化、焊接、
+  定向与拓扑检查。
+- `weierstrass.py` —— 统一入口，以及原有的 P/D 精确生成路径。
 - `operators.py` —— `tpms.generate`：构建网格对象和 Array 修改器栈。
 - `properties.py`、`ui.py` —— 参数设置和 N 面板。
 

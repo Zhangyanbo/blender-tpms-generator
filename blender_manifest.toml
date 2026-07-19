@@ -1,16 +1,25 @@
 schema_version = "1.0.0"
 
 id = "tpms_generator"
-version = "2.1.0"
+version = "2.3.0"
 name = "TPMS Generator"
 tagline = "Exact parametric TPMS (Gyroid, Schwarz P/D) as clean quad meshes"
 maintainer = "Yanbo Zhang <zhangybspm@gmail.com>"
 type = "add-on"
 
-tags = ["Mesh", "Geometry"]
+tags = ["Mesh", "Modeling"]
 
 blender_version_min = "4.2.0"
 
 license = ["SPDX:MIT"]
+
+paths_exclude_pattern = [
+    "/.git/",
+    "/.venv/",
+    "/__pycache__/",
+    "/tests/",
+    "/*.zip",
+    "*.pyc",
+]
 
 # This add-on only relies on numpy (bundled with Blender) and the standard bpy API.

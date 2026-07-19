@@ -3,9 +3,9 @@
 Pipeline
 --------
 1. `weierstrass.build_unit_cell` evaluates the exact Enneper-Weierstrass
-   parametrization of the chosen surface (Gyroid / Schwarz P / Schwarz D)
-   on a Coons-patch grid and assembles one cubic unit cell as a welded
-   all-quad mesh.
+   parametrization of the chosen surface.  Gyroid uses 48 paired-triangle
+   macro patches with cached harmonic square coordinates; P and D retain
+   their existing exact patch grids.
    Every vertex lies on the exact minimal surface and boundary vertices
    match their periodic partners to ~1e-9 of the cell.
 2. Three Array modifiers (X, Y, Z) with vertex merging tile the cell.
@@ -22,7 +22,7 @@ from . import weierstrass
 
 
 def _make_quad_mesh_object(name, verts, quads, normals, collection, smooth):
-    """Build a quad mesh with exact analytic normals."""
+    """Build a directly sampled quad mesh with smooth vertex normals."""
     mesh = bpy.data.meshes.new(name)
     mesh.from_pydata(
         [(float(v[0]), float(v[1]), float(v[2])) for v in verts],
@@ -72,12 +72,14 @@ class TPMS_OT_generate(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.tpms_props
-        cs = float(props.cell_size)
+        cs = float(props.cell_scale)
 
         t0 = time.perf_counter()
         verts, quads, normals = weierstrass.build_unit_cell(
             tpms_type=props.tpms_type, cell_size=cs,
-            res=int(props.resolution))
+            res=int(props.quad_subdivisions),
+            solver_resolution=int(props.solver_resolution),
+            quadrature_order=int(props.quadrature_order))
         dt_build = time.perf_counter() - t0
 
         name = f"TPMS_{props.tpms_type.title()}"

@@ -31,10 +31,10 @@ is exact at any density, so there are no voxel steps, no skinny
 triangles, and nothing to retopologize; a Subdivision Surface modifier
 can be dropped on top directly.
 
-**Low face count, instant generation.** Because coarse meshes are still
-faithful, a gyroid cell needs only ~6k quads where an iso-surface mesh
-of similar quality takes an order of magnitude more triangles. A cell
-builds in milliseconds, so iterating on parameters feels immediate.
+**True macro-quad topology.** A Gyroid cell is assembled from 96 exact
+fundamental triangles paired into 48 genuine four-sided parameter patches.
+Their common circular edges become interior curves and are absent from the
+Blender topology. At the default subdivision, one cell contains 192 quads.
 
 **Convenient to tile and edit.** The generator emits a single unit cell
 with three Array modifiers already attached. Cell counts along X/Y/Z
@@ -55,11 +55,12 @@ with Blender) and has no external dependencies.
 ### Usage
 
 Open the N-panel in the 3D viewport and switch to the **TPMS** tab.
-Pick a surface type, set the cell size, the cell counts and the
-resolution, then press **Generate TPMS**.
+Pick a surface type, set the cell scale, the cell counts and **Quad
+Subdivisions**, then press **Generate TPMS**. For Gyroid, the advanced
+Harmonic Solver and Quadrature Order defaults normally need no adjustment.
 
-Resolution counts quads per fundamental patch edge; since the shape is
-exact at any setting, raising it only smooths silhouettes. Gyroid and
+Quad Subdivisions counts quads along each parameter-patch edge. A Gyroid
+cell contains exactly `48 × n²` quads. Raising it smooths silhouettes. Gyroid and
 Schwarz D blocks come out box-clean. Schwarz P is the one exception in
 appearance: its patches straddle the cell faces, so a finite block has
 a ragged skin even though the tiling itself is seamless — trim with a
@@ -86,9 +87,9 @@ suite — is in [docs/mathematics.md](docs/mathematics.md).
 是实际输出。形状在任何密度下都精确，没有体素台阶、没有细长三角形、不需
 要重拓扑，直接加一个细分曲面修改器就能用。
 
-**面数少，生成快。**粗网格也同样忠实，所以一个 Gyroid 晶胞只要约 6 千个
-四边形，同等质量的等值面网格需要多一个数量级的三角形。单个晶胞毫秒级生
-成，调参数几乎是即时反馈。
+**真正的宏观四边拓扑。**Gyroid 晶胞先生成 96 张精确基本三角片，再沿圆弧边
+两两配成 48 张真正的四边参数片。公共圆弧成为片内曲线，不会出现在 Blender
+网格边中。默认细分下，每个晶胞为 192 个四边面。
 
 **平铺和编辑方便。**生成器输出一个晶胞，三个 Array 修改器已经挂好。X/Y/Z
 方向的晶胞数量可以在修改器上随时改，平铺的晶胞之间没有可见接缝，应用修
@@ -106,10 +107,11 @@ suite — is in [docs/mathematics.md](docs/mathematics.md).
 ### 使用
 
 在 3D 视口打开 N 面板，切换到 **TPMS** 标签页。选择曲面类型，设置晶胞尺
-寸、晶胞数量和分辨率，点击 **Generate TPMS**。
+寸、晶胞数量和 **Quad Subdivisions**，点击 **Generate TPMS**。Gyroid 的
+Harmonic Solver 和 Quadrature Order 通常保持默认即可。
 
-分辨率指每个基本片边上的四边形数；形状在任何设置下都精确，提高分辨率只
-是让轮廓更平滑。Gyroid 和 Schwarz D 的块体边缘是方正的。Schwarz P 在外
+Quad Subdivisions 指每张参数片每边的四边面数；Gyroid 晶胞的面数严格为
+`48 × n²`。提高该值可使轮廓更平滑。Gyroid 和 Schwarz D 的块体边缘是方正的。Schwarz P 在外
 观上是个例外：它的基本片会斜跨晶胞面，有限大小的块体表皮参差（平铺本身
 仍然无缝）——需要平切的 P 块体时用 Boolean 修整一下。
 

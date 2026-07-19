@@ -18,7 +18,7 @@ class TPMS_PT_panel(bpy.types.Panel):
 
         box = layout.box()
         box.label(text="Lattice")
-        box.prop(p, "cell_size")
+        box.prop(p, "cell_scale")
 
         box = layout.box()
         box.label(text="Tiling")
@@ -31,11 +31,17 @@ class TPMS_PT_panel(bpy.types.Panel):
 
         box = layout.box()
         box.label(text="Quality")
-        box.prop(p, "resolution")
-        patches = {'GYROID': 96, 'SCHWARZ_P': 48, 'SCHWARZ_D': 192}
-        npatch = patches.get(p.tpms_type, 96)
-        box.label(text=f"~{npatch * int(p.resolution) ** 2} quads per cell",
+        box.prop(p, "quad_subdivisions")
+        patches = {'GYROID': 48, 'SCHWARZ_P': 48, 'SCHWARZ_D': 192}
+        npatch = patches.get(p.tpms_type, 48)
+        subdivisions = int(p.quad_subdivisions)
+        if p.tpms_type != 'GYROID':
+            subdivisions = max(2, subdivisions)
+        box.label(text=f"{npatch * subdivisions ** 2} quads per cell",
                   icon='MESH_GRID')
+        if p.tpms_type == 'GYROID':
+            box.prop(p, "solver_resolution")
+            box.prop(p, "quadrature_order")
         box.prop(p, "smooth_shade")
 
         layout.separator()

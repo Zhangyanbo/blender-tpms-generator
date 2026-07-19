@@ -24,11 +24,10 @@ integrals (computed here by the AGM):
     r(omega) = Re[ e^{i theta} Int_0^omega (1-tau^2, i(1+tau^2), 2tau)
                                             R(tau) dtau ].
 
-The fundamental patch is integrated on a Coons-patch grid over the curved
-quad domain O-P-Q-R (O = 0, P = (sqrt(3)-1)/sqrt(2), R = iP, arc
-|omega + (1+i)/sqrt(2)| = sqrt(2)); square-root branch points at P and R
-are handled in the chart zeta = sqrt(tau - branch), where the integrand is
-analytic, so Gauss-Legendre quadrature keeps full accuracy at the corners.
+Gyroid's 96 fundamental curved triangles are paired across their circular
+edges into 48 genuine macro-quadrilateral patches by ``gyroid_macro``.  A
+cached cotangent-harmonic square map removes the hidden diagonal's parameter
+kink.  The older Coons-patch evaluator below remains the exact P/D path.
 
 The isometries assembling the fundamental patch into one cubic unit cell
 were *derived numerically*, not copied from the papers (whose assembly
@@ -73,6 +72,11 @@ This module is pure numpy (no bpy) and unit-tested outside Blender.
 
 import numpy as np
 from collections import namedtuple
+
+try:
+    from . import gyroid_macro
+except ImportError:  # Allow pure-Python validation from the repository root.
+    import gyroid_macro
 
 # ----------------------------------------------------------------------
 # Constants
@@ -571,7 +575,8 @@ def _fundamental_patch(surf, res):
 # Unit-cell assembly
 # ----------------------------------------------------------------------
 
-def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=8):
+def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2,
+                    solver_resolution=44, quadrature_order=200):
     """Build one cubic unit cell of an exact TPMS as an all-quad mesh.
 
     Parameters
@@ -579,16 +584,23 @@ def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=8):
     tpms_type : str   -- key into SURFACES ('GYROID', 'SCHWARZ_P',
                          'SCHWARZ_D').
     cell_size : float -- world edge length of the cubic translational cell.
-    res       : int   -- quads per fundamental-patch edge; the cell has
-                         len(ops) * res^2 quads (96/48/192 patches for
-                         G/P/D).
+    res       : int   -- quads per patch edge. Gyroid has 48 * res^2
+                         genuine macro quads; P/D retain 48/192 patches.
 
     Returns
     -------
     verts   : (V, 3) float64 -- welded vertices, cell spans ~[0, cell_size]^3
     quads   : (Q, 4) int32   -- quad faces, globally consistent orientation
-    normals : (V, 3) float64 -- exact analytic unit normals
+    normals : (V, 3) float64 -- smooth unit normals
     """
+    if tpms_type == 'GYROID':
+        return gyroid_macro.build_unit_cell(
+            cell_size=cell_size,
+            quad_subdivisions=res,
+            solver_resolution=solver_resolution,
+            quadrature_order=quadrature_order,
+        )
+
     surf = SURFACES[tpms_type]
     res = max(2, int(res))
     patch, pnorm = _fundamental_patch(surf, res)

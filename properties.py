@@ -13,7 +13,7 @@ from bpy.props import (
 TPMS_TYPES = [
     ('GYROID', "Gyroid",
      "Schoen G surface (Ia-3d): exact Enneper-Weierstrass parametrization, "
-     "96 patches per cell"),
+     "48 genuine quadrilateral macro patches per cell"),
     ('SCHWARZ_P', "Schwarz Primitive",
      "Schwarz P surface (Im-3m): exact parametrization, 48 patches per cell"),
     ('SCHWARZ_D', "Schwarz Diamond",
@@ -30,8 +30,8 @@ class TPMSProperties(bpy.types.PropertyGroup):
         default='GYROID',
     )
 
-    cell_size: FloatProperty(
-        name="Cell Size",
+    cell_scale: FloatProperty(
+        name="Cell Scale",
         description="World-unit edge length of one cubic TPMS unit cell",
         default=1.0, min=0.001, soft_max=10.0,
         unit='LENGTH',
@@ -57,18 +57,29 @@ class TPMSProperties(bpy.types.PropertyGroup):
         default=4, min=1, soft_max=64,
     )
 
-    resolution: IntProperty(
-        name="Resolution",
-        description="Quads per fundamental-patch edge. The unit cell has "
-                    "(patches x res^2) quads with 96/48/192 patches for "
-                    "Gyroid/P/D. Every vertex lies on the exact minimal "
-                    "surface, so even low resolutions are accurate",
-        default=8, min=2, soft_max=32,
+    quad_subdivisions: IntProperty(
+        name="Quad Subdivisions",
+        description="Quads along each side of a parameter patch. Gyroid "
+                    "has exactly 48 * n^2 output quads",
+        default=2, min=1, soft_max=16,
+    )
+
+    solver_resolution: IntProperty(
+        name="Harmonic Solver",
+        description="Resolution of the cached harmonic reparameterization "
+                    "used by the 48 Gyroid macro patches",
+        default=44, min=32, max=64,
+    )
+
+    quadrature_order: IntProperty(
+        name="Quadrature Order",
+        description="Gauss-Legendre order for exact Weierstrass integration",
+        default=200, min=64, max=320,
     )
 
     smooth_shade: BoolProperty(
         name="Smooth Shading",
-        description="Apply smooth shading with exact analytic normals",
+        description="Apply smooth shading with consistent vertex normals",
         default=True,
     )
 
