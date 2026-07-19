@@ -19,7 +19,7 @@ class BonnetMacroTests(unittest.TestCase):
         for surface_name, patch_count in expected.items():
             surface, reference, transforms = self._surface_data(surface_name)
             pairs = bonnet_macro._macro_pairs(
-                surface_name, surface, transforms, 200)
+                surface_name, surface, transforms)
             self.assertEqual(len(pairs), patch_count)
             self.assertEqual(
                 sorted(index for pair in pairs for index in pair[:2]),
@@ -33,8 +33,6 @@ class BonnetMacroTests(unittest.TestCase):
                 vertices, faces, normals = weierstrass.build_unit_cell(
                     surface_name,
                     res=subdivisions,
-                    solver_resolution=32,
-                    quadrature_order=80,
                 )
                 self.assertEqual(
                     faces.shape,
@@ -52,8 +50,6 @@ class BonnetMacroTests(unittest.TestCase):
             vertices, faces, _ = weierstrass.build_unit_cell(
                 surface_name,
                 res=2,
-                solver_resolution=44,
-                quadrature_order=200,
             )
             metrics = gyroid_macro.validate_unit_cell(vertices, faces)
             vertex_count, face_count, euler, genus = values
@@ -69,20 +65,22 @@ class BonnetMacroTests(unittest.TestCase):
             self.assertEqual(metrics['quotient_euler_characteristic'], euler)
             self.assertEqual(metrics['periodic_quotient_genus'], genus)
 
-    def test_hidden_diagonal_matches_to_integration_accuracy(self):
-        parameter = np.linspace(0.05, 0.95, 11)
-        epsilon = 1.0e-10
+    def test_analytic_branches_match_on_internal_circle(self):
+        phi = np.linspace(0.05, 0.5 * np.pi - 0.05, 17)
+        omega = gyroid_macro._rho_max(phi) * np.exp(1j * phi)
         for surface_name in ('SCHWARZ_P', 'SCHWARZ_D'):
             surface, _, transforms = self._surface_data(surface_name)
             pair = bonnet_macro._macro_pairs(
-                surface_name, surface, transforms, 200)[0]
-            below = bonnet_macro._piecewise_points(
-                parameter, parameter - epsilon,
-                pair, surface, transforms, 200)
-            above = bonnet_macro._piecewise_points(
-                parameter, parameter + epsilon,
-                pair, surface, transforms, 200)
-            error = np.max(np.linalg.norm(below - above, axis=1))
+                surface_name, surface, transforms)[0]
+            lower, upper, shift = pair
+            lower_points = bonnet_macro._apply(
+                bonnet_macro._surface_points(omega, surface),
+                transforms[lower])
+            upper_omega = 1j * np.conj(omega)
+            upper_points = bonnet_macro._apply(
+                bonnet_macro._surface_points(upper_omega, surface),
+                transforms[upper]) + shift
+            error = np.max(np.linalg.norm(lower_points - upper_points, axis=1))
             self.assertLess(error, 1.0e-9)
 
 

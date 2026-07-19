@@ -70,12 +70,16 @@ $P$ and $R$ are branch points of $R(\tau)$ — flat points of the surface.
 - For every surface, curved fundamental triangles are paired along their
   circular edges into genuine four-sided macro patches: 48 for G, 24 for P,
   and 96 for D. The paired circular edge is internal and is not emitted.
-- A single cotangent harmonic square map is shared by all three surfaces.
-  This is exact at the parameter level because they are isometric Bonnet
-  associates with the same first fundamental form.
-- Radial integrals use endpoint-regularized 200-point **Gauss–Legendre**
-  quadrature with continuous complex square-root branches. Smooth display
-  normals are area-weighted from the consistently oriented output quads.
+- Reflection in the common circle unfolds each triangle pair into a genuine
+  four-sided complex domain. Its four analytic boundary curves define a Coons
+  map $\zeta(u,v)$ directly from the unit square. Inside the circle the local
+  parameter is $\omega=\zeta$; outside it is the analytic continuation
+  $\omega=i\,\overline{J(\zeta)}$, where $J$ is circle reflection.
+- The same explicit map serves all three Bonnet associates. There is no
+  runtime harmonic solve, inverse lookup, or fitted approximation.
+- Radial Weierstrass integrals use fixed endpoint-regularized 32-point
+  **Gauss–Legendre** evaluation with continuous square-root branches. Its
+  measured positional error is about $10^{-11}$ in normalized cell units.
 
 ### Assembly into a unit cell
 
@@ -135,10 +139,10 @@ approximations:
 
 ### Code layout
 
-- `gyroid_macro.py` — exact Gyroid integration, automatic triangle pairing,
-  harmonic reparameterization, welding, orientation, and topology checks.
+- `gyroid_macro.py` — exact Gyroid integration, analytic macro-square map,
+  automatic triangle pairing, welding, orientation, and topology checks.
 - `bonnet_macro.py` — exact P/D integration and automatic macro pairing,
-  reusing the shared harmonic map and topology checks.
+  reusing the shared analytic square map and topology checks.
 - `weierstrass.py` — shared entry point and space-group data.
 - `operators.py` — `tpms.generate`: builds the mesh object + Array stack.
 - `properties.py`, `ui.py` — settings and N-panel.
@@ -213,10 +217,13 @@ $P$、$R$ 是 $R(\tau)$ 的分支点——曲面的平点。
 
 - 三种曲面的曲边基本三角片都沿圆弧边两两配对，形成真正的四边宏观片：
   G/P/D 分别为 48/24/96 张。配对圆弧成为片内曲线，不作为网格边输出。
-- 三种曲面共用一套余切调和方形映射。这在参数层面是精确的，因为它们是具有
-  相同第一基本形式的等距 Bonnet associate。
-- 径向积分使用端点正则化的 200 点 **Gauss–Legendre** 求积，并连续选择复平方根
-  分支。平滑显示法向由定向一致的输出四边面按面积加权得到。
+- 通过公共圆反演，把每对三角域展开成一个真正的四边复参数域。它的四条解析
+  边界直接定义从单位正方形出发的 Coons 映射 $\zeta(u,v)$。圆内取
+  $\omega=\zeta$；圆外取解析延拓 $\omega=i\,\overline{J(\zeta)}$。
+- 三种 Bonnet associate 共用这一显式解析映射；运行时不求解调和方程、不做
+  逆映射查找，也不做拟合。
+- 径向 Weierstrass 积分在内部固定使用端点正则化的 32 点 **Gauss–Legendre**
+  求值，并连续选择复平方根分支；归一化晶胞中的实测位置误差约为 $10^{-11}$。
 
 ### 晶胞组装
 
@@ -266,9 +273,9 @@ $$
 
 ### 代码结构
 
-- `gyroid_macro.py` —— Gyroid 精确积分、三角片自动配对、调和重参数化、焊接、
+- `gyroid_macro.py` —— Gyroid 精确积分、解析宏观方形映射、三角片自动配对、焊接、
   定向与拓扑检查。
-- `bonnet_macro.py` —— P/D 精确积分与自动宏观片配对，复用调和映射与拓扑检查。
+- `bonnet_macro.py` —— P/D 精确积分与自动宏观片配对，复用解析方形映射与拓扑检查。
 - `weierstrass.py` —— 统一入口与空间群数据。
 - `operators.py` —— `tpms.generate`：构建网格对象和 Array 修改器栈。
 - `properties.py`、`ui.py` —— 参数设置和 N 面板。

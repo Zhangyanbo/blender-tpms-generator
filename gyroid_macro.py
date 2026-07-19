@@ -1,9 +1,8 @@
 """Exact Gyroid unit cell made from 48 genuine quadrilateral patches.
 
-The construction follows ``docs/Gyroid_Blender_Plugin_MacroQuad_Update_Spec.md``:
-96 Weierstrass fundamental triangles are paired across their circular edges,
-then a cached harmonic map removes the parameter kink at the hidden diagonal.
-Only the final quadrilateral grid is returned to Blender.
+Two fundamental triangles are analytically unfolded across their shared circle
+into one genuine four-sided complex domain. A Coons map addresses that domain
+directly; no runtime PDE, inverse map, lookup table, or fitted surrogate exists.
 """
 
 from collections import defaultdict, deque
@@ -12,11 +11,11 @@ import numpy as np
 
 
 _SQ2 = np.sqrt(2.0)
-_THETA = None
-_KAPPA = None
-_GL_CACHE = {}
-_HARMONIC_CACHE = {}
-_PAIR_CACHE = {}
+_ARC_CENTER = -(1.0 + 1.0j) / _SQ2
+_ARC_RADIUS = _SQ2
+_BRANCH_RADIUS = (np.sqrt(3.0) - 1.0) / _SQ2
+_REFLECTED_ORIGIN = (1.0 + 1.0j) / _SQ2
+_PAIR_CACHE = None
 
 
 def _ellipk(m):
@@ -32,6 +31,11 @@ _K = _ellipk(0.25)
 _KP = _ellipk(0.75)
 _THETA = np.arctan(_K / _KP)
 _KAPPA = np.hypot(_K, _KP) / (_K * _KP)
+
+_GL_NODES, _GL_WEIGHTS = np.polynomial.legendre.leggauss(32)
+_GL_S = 0.5 * (_GL_NODES + 1.0)
+_GL_T = 2.0 * _GL_S - _GL_S * _GL_S
+_GL_WEIGHTS = 0.5 * _GL_WEIGHTS * 2.0 * (1.0 - _GL_S)
 
 
 _PATCH_TRANSFORMS = (
@@ -83,25 +87,11 @@ def _rho_max(phi):
     return (-_SQ2 * cs + np.sqrt(2.0 * cs * cs + 4.0)) * 0.5
 
 
-def _quadrature(order):
-    order = max(32, int(order))
-    cached = _GL_CACHE.get(order)
-    if cached is None:
-        nodes, weights = np.polynomial.legendre.leggauss(order)
-        s = 0.5 * (nodes + 1.0)
-        weights = 0.5 * weights
-        t = 2.0 * s - s * s
-        weights = weights * 2.0 * (1.0 - s)
-        cached = (t, weights)
-        _GL_CACHE[order] = cached
-    return cached
-
-
-def _weierstrass(omega, order):
+def _weierstrass(omega):
     """Evaluate the exact fundamental triangle along continuous radial roots."""
     shape = np.shape(omega)
     om = np.asarray(omega, dtype=complex).reshape(-1)
-    t, weights = _quadrature(order)
+    t, weights = _GL_T, _GL_WEIGHTS
     tau = om[:, None] * t[None, :]
     z = tau ** 8 - 14.0 * tau ** 4 + 1.0
     phase = np.unwrap(np.angle(z), axis=1)
@@ -117,13 +107,6 @@ def _weierstrass(omega, order):
     return xyz.reshape(shape + (3,))
 
 
-def _omega_from_barycentric(lam_p, lam_r):
-    r = lam_p + lam_r
-    ratio = np.divide(lam_r, r, out=np.zeros_like(r, dtype=float), where=r > 0.0)
-    phi = 0.5 * np.pi * ratio
-    return r * _rho_max(phi) * np.exp(1j * phi)
-
-
 def _apply_transform(points, transform):
     a, b = transform
     return np.asarray(points) @ a.T + b
@@ -137,15 +120,14 @@ def _periodic_curve_key(curve):
     return min(forward, backward)
 
 
-def _macro_pairs(order):
+def _macro_pairs():
     """Discover the 48 circular-edge pairs; pair numbers are never hard-coded."""
-    cache_order = max(32, int(order))
-    cached = _PAIR_CACHE.get(cache_order)
-    if cached is not None:
-        return cached
+    global _PAIR_CACHE
+    if _PAIR_CACHE is not None:
+        return _PAIR_CACHE
 
     phi = np.linspace(0.0, 0.5 * np.pi, 17)
-    arc = _weierstrass(_rho_max(phi) * np.exp(1j * phi), cache_order)
+    arc = _weierstrass(_rho_max(phi) * np.exp(1j * phi))
     groups = defaultdict(list)
     curves = []
     for index, transform in enumerate(_TRIANGLE_TRANSFORMS):
@@ -177,177 +159,51 @@ def _macro_pairs(order):
             raise RuntimeError(f"Gyroid hidden-edge mismatch: {seam_error:.3g}")
         pairs.append((lower, upper, shift))
     pairs.sort(key=lambda item: item[:2])
-    cached = tuple(pairs)
-    _PAIR_CACHE[cache_order] = cached
-    return cached
+    _PAIR_CACHE = tuple(pairs)
+    return _PAIR_CACHE
 
 
-def _piecewise_points(s, t, pair, order):
-    """Initial exact C0 map P0 from a square split along t=s."""
-    s, t = np.broadcast_arrays(np.asarray(s, dtype=float), np.asarray(t, dtype=float))
-    flat_s, flat_t = s.ravel(), t.ravel()
-    lower_mask = flat_t <= flat_s
-    points = np.empty((flat_s.size, 3), dtype=float)
+def _circle_reflect(omega):
+    """Reflect across the circular edge; this is an anti-Mobius involution."""
+    return (_ARC_CENTER + _ARC_RADIUS ** 2
+            / (np.conj(omega) - np.conj(_ARC_CENTER)))
+
+
+def _macro_square_domain(u, v):
+    """Analytically map a square onto the unfolded genuine four-sided domain."""
+    u, v = np.broadcast_arrays(np.asarray(u, float), np.asarray(v, float))
+    bottom = u * _BRANCH_RADIUS
+    top = _circle_reflect(1j * (1.0 - u) * _BRANCH_RADIUS)
+    left = 1j * v * _BRANCH_RADIUS
+    right = _circle_reflect((1.0 - v) * _BRANCH_RADIUS)
+    bilinear = (u * (1.0 - v) * _BRANCH_RADIUS
+                + u * v * _REFLECTED_ORIGIN
+                + (1.0 - u) * v * 1j * _BRANCH_RADIUS)
+    return ((1.0 - v) * bottom + v * top
+            + (1.0 - u) * left + u * right - bilinear)
+
+
+def _macro_square_omega(u, v):
+    """Return local triangle coordinates and the selected analytic branch."""
+    unfolded = _macro_square_domain(u, v)
+    upper = np.abs(unfolded - _ARC_CENTER) > _ARC_RADIUS + 1.0e-12
+    omega = unfolded.copy()
+    omega[upper] = 1j * np.conj(_circle_reflect(unfolded[upper]))
+    return omega, upper
+
+
+def _macro_patch_points(u, v, pair):
+    """Evaluate one globally smooth analytic macro patch."""
+    omega, upper_mask = _macro_square_omega(u, v)
+    base = _weierstrass(omega).reshape(-1, 3)
+    upper_mask = upper_mask.ravel()
     lower, upper, shift = pair
-
-    lp = np.empty(flat_s.size)
-    lr = np.empty(flat_s.size)
-    lp[lower_mask] = 1.0 - flat_s[lower_mask]
-    lr[lower_mask] = flat_t[lower_mask]
-    lp[~lower_mask] = flat_s[~lower_mask]
-    lr[~lower_mask] = 1.0 - flat_t[~lower_mask]
-    base = _weierstrass(_omega_from_barycentric(lp, lr), order).reshape(-1, 3)
-    points[lower_mask] = _apply_transform(
-        base[lower_mask], _TRIANGLE_TRANSFORMS[lower])
-    points[~lower_mask] = _apply_transform(
-        base[~lower_mask], _TRIANGLE_TRANSFORMS[upper]) + shift
-    return points.reshape(s.shape + (3,))
-
-
-def _triangles_for_grid(resolution):
-    idx = np.arange((resolution + 1) ** 2).reshape(resolution + 1,
-                                                            resolution + 1)
-    tris = []
-    for i in range(resolution):
-        for j in range(resolution):
-            a, b = idx[i, j], idx[i + 1, j]
-            c, d = idx[i, j + 1], idx[i + 1, j + 1]
-            tris.append((a, b, d))
-            tris.append((a, d, c))
-    return np.asarray(tris, dtype=np.int32)
-
-
-def _cotangent_adjacency(points, triangles):
-    weights = defaultdict(float)
-    for tri in triangles:
-        ids = [int(x) for x in tri]
-        p = points[ids]
-        twice_area = np.linalg.norm(np.cross(p[1] - p[0], p[2] - p[0]))
-        if twice_area <= 1.0e-15:
-            raise RuntimeError("Degenerate auxiliary triangle in harmonic solver")
-        for corner, edge in ((0, (1, 2)), (1, (2, 0)), (2, (0, 1))):
-            v0 = p[edge[0]] - p[corner]
-            v1 = p[edge[1]] - p[corner]
-            cot = float(np.dot(v0, v1) / twice_area)
-            a, b = sorted((ids[edge[0]], ids[edge[1]]))
-            weights[(a, b)] += 0.5 * cot
-    adjacency = [[] for _ in range(len(points))]
-    for (a, b), weight in weights.items():
-        adjacency[a].append((b, weight))
-        adjacency[b].append((a, weight))
-    return adjacency
-
-
-def _cg(matvec, rhs, initial, tolerance=1.0e-11, max_iterations=10000):
-    x = initial.copy()
-    residual = rhs - matvec(x)
-    direction = residual.copy()
-    rr = float(np.dot(residual, residual))
-    target = tolerance * max(1.0, float(np.linalg.norm(rhs)))
-    if np.sqrt(rr) <= target:
-        return x
-    for _ in range(max_iterations):
-        ad = matvec(direction)
-        denom = float(np.dot(direction, ad))
-        if denom <= 0.0:
-            break
-        alpha = rr / denom
-        x += alpha * direction
-        residual -= alpha * ad
-        next_rr = float(np.dot(residual, residual))
-        if np.sqrt(next_rr) <= target:
-            return x
-        direction = residual + (next_rr / rr) * direction
-        rr = next_rr
-    raise RuntimeError("Cotangent harmonic solve did not converge")
-
-
-def _harmonic_template(solver_resolution, order):
-    key = (max(8, int(solver_resolution)), max(32, int(order)))
-    cached = _HARMONIC_CACHE.get(key)
-    if cached is not None:
-        return cached
-    resolution = key[0]
-    axis = np.linspace(0.0, 1.0, resolution + 1)
-    ss, tt = np.meshgrid(axis, axis, indexing='ij')
-    st = np.stack((ss, tt), axis=-1).reshape(-1, 2)
-    pair = _macro_pairs(order)[0]
-    points = _piecewise_points(ss, tt, pair, order).reshape(-1, 3)
-    triangles = _triangles_for_grid(resolution)
-    adjacency = _cotangent_adjacency(points, triangles)
-
-    boundary = ((st[:, 0] == 0.0) | (st[:, 0] == 1.0) |
-                (st[:, 1] == 0.0) | (st[:, 1] == 1.0))
-    interior_ids = np.flatnonzero(~boundary)
-    interior_lookup = np.full(len(st), -1, dtype=np.int32)
-    interior_lookup[interior_ids] = np.arange(len(interior_ids))
-
-    diagonal = np.empty(len(interior_ids))
-    rhs = np.zeros((len(interior_ids), 2))
-    neighbor_rows = []
-    neighbor_weights = []
-    for row, vertex in enumerate(interior_ids):
-        diagonal[row] = sum(weight for _, weight in adjacency[vertex])
-        rows, values = [], []
-        for neighbor, weight in adjacency[vertex]:
-            neighbor_row = interior_lookup[neighbor]
-            if neighbor_row >= 0:
-                rows.append(int(neighbor_row))
-                values.append(float(weight))
-            else:
-                rhs[row] += weight * st[neighbor]
-        neighbor_rows.append(np.asarray(rows, dtype=np.int32))
-        neighbor_weights.append(np.asarray(values, dtype=float))
-
-    def matvec(values):
-        result = diagonal * values
-        for row, (cols, weights) in enumerate(zip(neighbor_rows, neighbor_weights)):
-            result[row] -= np.dot(weights, values[cols])
-        return result
-
-    uv = st.copy()
-    for component in range(2):
-        uv[interior_ids, component] = _cg(
-            matvec, rhs[:, component], st[interior_ids, component])
-
-    edge_1 = uv[triangles[:, 1]] - uv[triangles[:, 0]]
-    edge_2 = uv[triangles[:, 2]] - uv[triangles[:, 0]]
-    signed = edge_1[:, 0] * edge_2[:, 1] - edge_1[:, 1] * edge_2[:, 0]
-    if np.min(signed) <= 1.0e-12:
-        raise RuntimeError(
-            f"Harmonic map contains a flipped triangle (min area {np.min(signed):.3g})")
-    cached = (st, uv, triangles)
-    _HARMONIC_CACHE[key] = cached
-    return cached
-
-
-def _inverse_harmonic_grid(subdivisions, solver_resolution, order):
-    st, uv, triangles = _harmonic_template(solver_resolution, order)
-    axis = np.linspace(0.0, 1.0, subdivisions + 1)
-    uu, vv = np.meshgrid(axis, axis, indexing='ij')
-    targets = np.stack((uu, vv), axis=-1).reshape(-1, 2)
-    result = np.empty_like(targets)
-    a = uv[triangles[:, 0]]
-    ab = uv[triangles[:, 1]] - a
-    ac = uv[triangles[:, 2]] - a
-    denominator = ab[:, 0] * ac[:, 1] - ab[:, 1] * ac[:, 0]
-    lo = np.min(uv[triangles], axis=1) - 2.0e-12
-    hi = np.max(uv[triangles], axis=1) + 2.0e-12
-    for index, target in enumerate(targets):
-        candidates = np.flatnonzero(np.all(target >= lo, axis=1) &
-                                    np.all(target <= hi, axis=1))
-        delta = target - a[candidates]
-        b1 = (delta[:, 0] * ac[candidates, 1] -
-              delta[:, 1] * ac[candidates, 0]) / denominator[candidates]
-        b2 = (ab[candidates, 0] * delta[:, 1] -
-              ab[candidates, 1] * delta[:, 0]) / denominator[candidates]
-        bary = np.stack((1.0 - b1 - b2, b1, b2), axis=1)
-        best = int(np.argmax(np.min(bary, axis=1)))
-        if np.min(bary[best]) < -2.0e-8:
-            raise RuntimeError(f"Could not invert harmonic map at {target}")
-        tri = triangles[candidates[best]]
-        result[index] = bary[best] @ st[tri]
-    return result.reshape(subdivisions + 1, subdivisions + 1, 2)
+    points = np.empty_like(base)
+    points[~upper_mask] = _apply_transform(
+        base[~upper_mask], _TRIANGLE_TRANSFORMS[lower])
+    points[upper_mask] = _apply_transform(
+        base[upper_mask], _TRIANGLE_TRANSFORMS[upper]) + shift
+    return points.reshape(np.shape(omega) + (3,))
 
 
 def _weld(vertices, faces, tolerance=3.0e-6):
@@ -391,7 +247,7 @@ def _orient_faces(vertices, faces):
                     queue.append(other)
                 elif flip[other] != wanted:
                     raise RuntimeError("Gyroid mesh is not consistently orientable")
-    faces[flip == 1] = faces[flip == 1, ::-1]
+    faces[flip == 1] = faces[flip == 1][:, [0, 3, 2, 1]]
     return faces
 
 
@@ -407,17 +263,15 @@ def _vertex_normals(vertices, faces):
     return normals
 
 
-def build_unit_cell(cell_size=1.0, quad_subdivisions=2,
-                    solver_resolution=44, quadrature_order=200):
+def build_unit_cell(cell_size=1.0, quad_subdivisions=2):
     """Return a welded unit cell sampled from 48 genuine macro quads."""
     cell_size = float(cell_size)
     if not np.isfinite(cell_size) or cell_size <= 0.0:
         raise ValueError("cell_size must be a positive finite number")
     n = max(1, int(quad_subdivisions))
-    order = max(32, int(quadrature_order))
-    inverse = _inverse_harmonic_grid(n, solver_resolution, order)
-    s, t = inverse[..., 0], inverse[..., 1]
-    pairs = _macro_pairs(order)
+    axis = np.linspace(0.0, 1.0, n + 1)
+    u, v = np.meshgrid(axis, axis, indexing='ij')
+    pairs = _macro_pairs()
 
     local_idx = np.arange((n + 1) ** 2).reshape(n + 1, n + 1)
     local_faces = np.stack((local_idx[:-1, :-1].ravel(),
@@ -427,7 +281,7 @@ def build_unit_cell(cell_size=1.0, quad_subdivisions=2,
     all_vertices, all_faces = [], []
     offset = 0
     for pair in pairs:
-        patch = _piecewise_points(s, t, pair, order).reshape(-1, 3)
+        patch = _macro_patch_points(u, v, pair).reshape(-1, 3)
         all_vertices.append(patch)
         all_faces.append(local_faces + offset)
         offset += len(patch)
@@ -463,9 +317,9 @@ def build_unit_cell(cell_size=1.0, quad_subdivisions=2,
     return vertices * cell_size, faces, normals
 
 
-def macro_topology_counts(quadrature_order=200):
+def macro_topology_counts():
     """Small public diagnostic used by tests and Blender-side reporting."""
-    pairs = _macro_pairs(quadrature_order)
+    pairs = _macro_pairs()
     return {
         'fundamental_triangles': len(_TRIANGLE_TRANSFORMS),
         'circular_edge_groups': len(pairs),

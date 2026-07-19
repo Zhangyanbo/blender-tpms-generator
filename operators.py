@@ -3,9 +3,9 @@
 Pipeline
 --------
 1. `weierstrass.build_unit_cell` evaluates the exact Enneper-Weierstrass
-   parametrization of the chosen surface. Circular-edge triangle pairs form
-   genuine macro patches with one cached harmonic square map shared by all
-   three Bonnet associates.
+   parametrization of the chosen surface. Circular reflection unfolds each
+   triangle pair into a genuine four-sided complex domain, addressed directly
+   by one analytic square map shared by all three Bonnet associates.
    Every vertex lies on the exact minimal surface and boundary vertices
    match their periodic partners to ~1e-9 of the cell.
 2. Three Array modifiers (X, Y, Z) with vertex merging tile the cell.
@@ -77,9 +77,7 @@ class TPMS_OT_generate(bpy.types.Operator):
         t0 = time.perf_counter()
         verts, quads, normals = weierstrass.build_unit_cell(
             tpms_type=props.tpms_type, cell_size=cs,
-            res=int(props.quad_subdivisions),
-            solver_resolution=int(props.solver_resolution),
-            quadrature_order=int(props.quadrature_order))
+            res=int(props.quad_subdivisions))
         dt_build = time.perf_counter() - t0
 
         name = f"TPMS_{props.tpms_type.title()}"

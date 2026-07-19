@@ -37,8 +37,6 @@ class TPMS_PT_panel(bpy.types.Panel):
         subdivisions = int(p.quad_subdivisions)
         box.label(text=f"{npatch * subdivisions ** 2} quads per cell",
                   icon='MESH_GRID')
-        box.prop(p, "solver_resolution")
-        box.prop(p, "quadrature_order")
         box.prop(p, "smooth_shade")
 
         layout.separator()

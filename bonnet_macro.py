@@ -13,11 +13,11 @@ except ImportError:
 _PAIR_CACHE = {}
 
 
-def _surface_points(omega, surface, order):
+def _surface_points(omega, surface):
     """Evaluate one exact fundamental triangle in standard cell coordinates."""
     shape = np.shape(omega)
     om = np.asarray(omega, dtype=complex).reshape(-1)
-    t, weights = core._quadrature(order)
+    t, weights = core._GL_T, core._GL_WEIGHTS
     tau = om[:, None] * t[None, :]
     polynomial = tau ** 8 - 14.0 * tau ** 4 + 1.0
     phase = np.unwrap(np.angle(polynomial), axis=1)
@@ -53,15 +53,14 @@ def _apply(points, transform):
     return np.asarray(points) @ matrix.T + translation
 
 
-def _macro_pairs(surface_name, surface, transforms, order):
-    cache_key = (surface_name, max(32, int(order)))
-    cached = _PAIR_CACHE.get(cache_key)
+def _macro_pairs(surface_name, surface, transforms):
+    cached = _PAIR_CACHE.get(surface_name)
     if cached is not None:
         return cached
 
     phi = np.linspace(0.0, 0.5 * np.pi, 17)
     omega = core._rho_max(phi) * np.exp(1j * phi)
-    arc = _surface_points(omega, surface, order)
+    arc = _surface_points(omega, surface)
     groups = defaultdict(list)
     curves = []
     for index, transform in enumerate(transforms):
@@ -94,45 +93,34 @@ def _macro_pairs(surface_name, surface, transforms, order):
         pairs.append((lower, upper, shift))
 
     pairs.sort(key=lambda item: item[:2])
-    _PAIR_CACHE[cache_key] = tuple(pairs)
-    return _PAIR_CACHE[cache_key]
+    _PAIR_CACHE[surface_name] = tuple(pairs)
+    return _PAIR_CACHE[surface_name]
 
 
-def _piecewise_points(s, t, pair, surface, transforms, order):
-    """Map the two halves of a square onto one paired macro patch."""
-    s, t = np.broadcast_arrays(np.asarray(s, float), np.asarray(t, float))
-    flat_s, flat_t = s.ravel(), t.ravel()
-    lower_mask = flat_t <= flat_s
-    lam_p = np.empty(flat_s.size)
-    lam_r = np.empty(flat_s.size)
-    lam_p[lower_mask] = 1.0 - flat_s[lower_mask]
-    lam_r[lower_mask] = flat_t[lower_mask]
-    lam_p[~lower_mask] = flat_s[~lower_mask]
-    lam_r[~lower_mask] = 1.0 - flat_t[~lower_mask]
-
-    omega = core._omega_from_barycentric(lam_p, lam_r)
-    base = _surface_points(omega, surface, order).reshape(-1, 3)
+def _macro_patch_points(u, v, pair, surface, transforms):
+    """Evaluate one globally smooth analytic P/D macro patch."""
+    omega, upper_mask = core._macro_square_omega(u, v)
+    base = _surface_points(omega, surface).reshape(-1, 3)
+    upper_mask = upper_mask.ravel()
     lower, upper, shift = pair
     points = np.empty_like(base)
-    points[lower_mask] = _apply(base[lower_mask], transforms[lower])
-    points[~lower_mask] = _apply(base[~lower_mask], transforms[upper]) + shift
-    return points.reshape(s.shape + (3,))
+    points[~upper_mask] = _apply(base[~upper_mask], transforms[lower])
+    points[upper_mask] = _apply(base[upper_mask], transforms[upper]) + shift
+    return points.reshape(np.shape(omega) + (3,))
 
 
 def build_unit_cell(surface_name, surface, reference_patch, cell_size=1.0,
-                    quad_subdivisions=2, solver_resolution=44,
-                    quadrature_order=200):
+                    quad_subdivisions=2):
     """Build Schwarz P/D directly from genuine four-sided parameter patches."""
     cell_size = float(cell_size)
     if not np.isfinite(cell_size) or cell_size <= 0.0:
         raise ValueError("cell_size must be a positive finite number")
     n = max(1, int(quad_subdivisions))
-    order = max(32, int(quadrature_order))
     transforms = _operation_transforms(surface, reference_patch)
-    pairs = _macro_pairs(surface_name, surface, transforms, order)
+    pairs = _macro_pairs(surface_name, surface, transforms)
 
-    inverse = core._inverse_harmonic_grid(n, solver_resolution, order)
-    s, t = inverse[..., 0], inverse[..., 1]
+    axis = np.linspace(0.0, 1.0, n + 1)
+    u, v = np.meshgrid(axis, axis, indexing='ij')
     index = np.arange((n + 1) ** 2).reshape(n + 1, n + 1)
     local_faces = np.stack((index[:-1, :-1].ravel(),
                             index[1:, :-1].ravel(),
@@ -143,8 +131,8 @@ def build_unit_cell(surface_name, surface, reference_patch, cell_size=1.0,
     faces = []
     offset = 0
     for pair in pairs:
-        patch = _piecewise_points(
-            s, t, pair, surface, transforms, order).reshape(-1, 3)
+        patch = _macro_patch_points(
+            u, v, pair, surface, transforms).reshape(-1, 3)
         vertices.append(patch)
         faces.append(local_faces + offset)
         offset += len(patch)
@@ -173,8 +161,6 @@ def build_unit_cell(surface_name, surface, reference_patch, cell_size=1.0,
     return vertices * cell_size, faces, normals
 
 
-def macro_patch_count(surface_name, surface, reference_patch,
-                      quadrature_order=200):
+def macro_patch_count(surface_name, surface, reference_patch):
     transforms = _operation_transforms(surface, reference_patch)
-    return len(_macro_pairs(
-        surface_name, surface, transforms, quadrature_order))
+    return len(_macro_pairs(surface_name, surface, transforms))

@@ -25,9 +25,10 @@ integrals (computed here by the AGM):
                                             R(tau) dtau ].
 
 Every surface's fundamental curved triangles are paired across their circular
-edges into genuine macro-quadrilateral patches. A shared cached cotangent-
-harmonic square map removes the hidden diagonal's parameter kink. The Coons
-evaluator below is retained only to resolve the published space-group copies.
+edges into genuine macro-quadrilateral patches. Circular reflection unfolds
+each pair into one explicit four-sided complex domain, so the square map is
+evaluated directly without a runtime solver. The older evaluator below is
+retained only to resolve the published space-group copies.
 
 The isometries assembling the fundamental patch into one cubic unit cell
 were *derived numerically*, not copied from the papers (whose assembly
@@ -574,8 +575,7 @@ def _fundamental_patch(surf, res):
 # Unit-cell assembly
 # ----------------------------------------------------------------------
 
-def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2,
-                    solver_resolution=44, quadrature_order=200):
+def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2):
     """Build one cubic unit cell of an exact TPMS as an all-quad mesh.
 
     Parameters
@@ -596,8 +596,6 @@ def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2,
         return gyroid_macro.build_unit_cell(
             cell_size=cell_size,
             quad_subdivisions=res,
-            solver_resolution=solver_resolution,
-            quadrature_order=quadrature_order,
         )
 
     surf = SURFACES[tpms_type]
@@ -609,8 +607,6 @@ def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2,
             reference_patch=reference_patch,
             cell_size=cell_size,
             quad_subdivisions=res,
-            solver_resolution=solver_resolution,
-            quadrature_order=quadrature_order,
         )
 
     res = max(2, int(res))

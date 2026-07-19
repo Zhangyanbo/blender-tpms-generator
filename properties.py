@@ -63,19 +63,6 @@ class TPMSProperties(bpy.types.PropertyGroup):
         default=2, min=1, soft_max=16,
     )
 
-    solver_resolution: IntProperty(
-        name="Harmonic Solver",
-        description="Resolution of the cached harmonic reparameterization "
-                    "shared by all three Bonnet associates",
-        default=44, min=32, max=64,
-    )
-
-    quadrature_order: IntProperty(
-        name="Quadrature Order",
-        description="Gauss-Legendre order for exact Weierstrass integration",
-        default=200, min=64, max=320,
-    )
-
     smooth_shade: BoolProperty(
         name="Smooth Shading",
         description="Apply smooth shading with consistent vertex normals",
