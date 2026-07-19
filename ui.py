@@ -4,7 +4,7 @@ import bpy
 
 
 class TPMS_PT_panel(bpy.types.Panel):
-    bl_label = "TPMS Generator"
+    bl_label = "PureQuad TPMS"
     bl_idname = "TPMS_PT_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'

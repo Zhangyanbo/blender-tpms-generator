@@ -1,6 +1,6 @@
 # Repository Working Agreement
 
-These rules apply to every agent changing the TPMS Generator repository.
+These rules apply to every agent changing the PureQuad TPMS repository.
 
 ## Definition of done
 
