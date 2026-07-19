@@ -6,13 +6,7 @@ clean all-quad meshes from their exact parametrizations.
 Blender 4.2+ 插件，生成 Gyroid、Schwarz P、Schwarz D 三种极小曲面点阵，
 输出由精确参数化直接得到的全四边形网格。
 
-| Gyroid (2×2×2) | Schwarz P (2×2×2) | Schwarz D (2×2×2) |
-|:---:|:---:|:---:|
-| ![Gyroid](docs/gyroid_2x2x2.png) | ![Schwarz P](docs/schwarz_p_2x2x2.png) | ![Schwarz D](docs/schwarz_d_2x2x2.png) |
-
-| Gyroid cell | Schwarz P cell | Schwarz D cell |
-|:---:|:---:|:---:|
-| ![Gyroid quad flow](docs/gyroid_quadflow.png) | ![Schwarz P cell](docs/schwarz_p_cell.png) | ![Schwarz D cell](docs/schwarz_d_cell.png) |
+![Gyroid, Schwarz P and Schwarz D all-quad meshes](docs/tpms_showcase.png)
 
 [English](#english) | [中文](#中文)
 
