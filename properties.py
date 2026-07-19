@@ -15,9 +15,9 @@ TPMS_TYPES = [
      "Schoen G surface (Ia-3d): exact Enneper-Weierstrass parametrization, "
      "48 genuine quadrilateral macro patches per cell"),
     ('SCHWARZ_P', "Schwarz Primitive",
-     "Schwarz P surface (Im-3m): exact parametrization, 48 patches per cell"),
+     "Schwarz P surface (Im-3m): 24 genuine quadrilateral macro patches"),
     ('SCHWARZ_D', "Schwarz Diamond",
-     "Schwarz D surface (Fd-3m): exact parametrization, 192 patches per cell"),
+     "Schwarz D surface (Fd-3m): 96 genuine quadrilateral macro patches"),
 ]
 
 
@@ -59,15 +59,14 @@ class TPMSProperties(bpy.types.PropertyGroup):
 
     quad_subdivisions: IntProperty(
         name="Quad Subdivisions",
-        description="Quads along each side of a parameter patch. Gyroid "
-                    "has exactly 48 * n^2 output quads",
+        description="Quads along each side of a genuine macro patch",
         default=2, min=1, soft_max=16,
     )
 
     solver_resolution: IntProperty(
         name="Harmonic Solver",
         description="Resolution of the cached harmonic reparameterization "
-                    "used by the 48 Gyroid macro patches",
+                    "shared by all three Bonnet associates",
         default=44, min=32, max=64,
     )
 

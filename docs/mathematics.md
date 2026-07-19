@@ -67,21 +67,15 @@ $P$ and $R$ are branch points of $R(\tau)$ — flat points of the surface.
 
 ### Discretization
 
-- For Gyroid, the 96 curved fundamental triangles are paired along their
-  circular edges into 48 genuine four-sided macro patches. A cotangent
-  harmonic map gives every macro patch a smooth square parameter domain;
-  the paired circular edge is internal and is not emitted as a mesh edge.
-- Gyroid radial integrals use endpoint-regularized 200-point
-  **Gauss–Legendre** quadrature with continuous complex square-root branches.
-  P and D retain their exact Coons-patch integration path.
-- Normals come from the Gauss map: the unit normal at parameter $\omega$
-  is the inverse stereographic image
-
-$$
-\mathbf{n}(\omega) = \frac{\bigl(2\mathrm{Re}\omega,\;
-2\mathrm{Im}\omega,\; \lvert\omega\rvert^2 - 1\bigr)}
-{1 + \lvert\omega\rvert^2} .
-$$
+- For every surface, curved fundamental triangles are paired along their
+  circular edges into genuine four-sided macro patches: 48 for G, 24 for P,
+  and 96 for D. The paired circular edge is internal and is not emitted.
+- A single cotangent harmonic square map is shared by all three surfaces.
+  This is exact at the parameter level because they are isometric Bonnet
+  associates with the same first fundamental form.
+- Radial integrals use endpoint-regularized 200-point **Gauss–Legendre**
+  quadrature with continuous complex square-root branches. Smooth display
+  normals are area-weighted from the consistently oriented output quads.
 
 ### Assembly into a unit cell
 
@@ -99,20 +93,13 @@ crystallography exactly:
 | surface | space group | patches / cell | lattice |
 |---|---|---|---|
 | Gyroid | $Ia\bar3d$ (230) | 96 triangles / 48 macro quads | bcc |
-| Schwarz P | $Im\bar3m$ (229) | 48 | bcc |
-| Schwarz D | $Fd\bar3m$ (227) | 192 | fcc |
+| Schwarz P | $Im\bar3m$ (229) | 48 triangles / 24 macro quads | bcc |
+| Schwarz D | $Fd\bar3m$ (227) | 192 triangles / 96 macro quads | fcc |
 
-Two subtleties beyond the Gyroid case:
-
-- For P and D the fundamental patch carries an internal 2-fold symmetry
-  (it spans two asymmetric units); the pipeline detects the stabilizer
-  and quotients it out, so no face is emitted twice.
-- Each operation carries an orientation sign — whether it swaps the two
-  sides of the surface. For P/D this differs from the determinant (their
-  groups contain in-surface 2-fold axes, which are proper yet
-  side-swapping, and surface-orthogonal mirrors, improper yet
-  side-preserving), so the sign is measured during derivation and stored
-  in the table.
+Circular-edge pairing is discovered from periodic curve keys rather than
+stored pair numbers. It yields groups of exactly two for all 336 transformed
+triangles. A final edge-adjacency traversal gives globally consistent face
+orientation without relying on surface-specific orientation flags.
 
 The cubic lattice constants come out as exact elliptic-integral
 expressions, matching the numerical integration to $\sim 10^{-9}$
@@ -150,7 +137,9 @@ approximations:
 
 - `gyroid_macro.py` — exact Gyroid integration, automatic triangle pairing,
   harmonic reparameterization, welding, orientation, and topology checks.
-- `weierstrass.py` — shared entry point plus the existing exact P/D path.
+- `bonnet_macro.py` — exact P/D integration and automatic macro pairing,
+  reusing the shared harmonic map and topology checks.
+- `weierstrass.py` — shared entry point and space-group data.
 - `operators.py` — `tpms.generate`: builds the mesh object + Array stack.
 - `properties.py`, `ui.py` — settings and N-panel.
 
@@ -222,18 +211,12 @@ $P$、$R$ 是 $R(\tau)$ 的分支点——曲面的平点。
 
 ### 离散化
 
-- Gyroid 的 96 张曲边基本三角片沿圆弧边两两配对，形成 48 张真正的四边
-  宏观片。余切调和映射为每张宏观片建立光滑的正方形参数域；配对圆弧成为
-  片内曲线，不作为网格边输出。
-- Gyroid 的径向积分使用端点正则化的 200 点 **Gauss–Legendre** 求积，并连续选择
-  复平方根分支。P 和 D 保留原有的精确 Coons 参数片路径。
-- 法向来自 Gauss 映射：参数 $\omega$ 处的单位法向是逆球极投影
-
-$$
-\mathbf{n}(\omega) = \frac{\bigl(2\mathrm{Re}\omega,\;
-2\mathrm{Im}\omega,\; \lvert\omega\rvert^2 - 1\bigr)}
-{1 + \lvert\omega\rvert^2} .
-$$
+- 三种曲面的曲边基本三角片都沿圆弧边两两配对，形成真正的四边宏观片：
+  G/P/D 分别为 48/24/96 张。配对圆弧成为片内曲线，不作为网格边输出。
+- 三种曲面共用一套余切调和方形映射。这在参数层面是精确的，因为它们是具有
+  相同第一基本形式的等距 Bonnet associate。
+- 径向积分使用端点正则化的 200 点 **Gauss–Legendre** 求积，并连续选择复平方根
+  分支。平滑显示法向由定向一致的输出四边面按面积加权得到。
 
 ### 晶胞组装
 
@@ -246,17 +229,12 @@ $\sim 10^{-9}$），复合生成空间群，再从纯平移读出立方晶格。
 | 曲面 | 空间群 | 片数/晶胞 | 晶格 |
 |---|---|---|---|
 | Gyroid | $Ia\bar3d$ (230) | 96 三角片 / 48 宏观四边片 | 体心 |
-| Schwarz P | $Im\bar3m$ (229) | 48 | 体心 |
-| Schwarz D | $Fd\bar3m$ (227) | 192 | 面心 |
+| Schwarz P | $Im\bar3m$ (229) | 48 三角片 / 24 宏观四边片 | 体心 |
+| Schwarz D | $Fd\bar3m$ (227) | 192 三角片 / 96 宏观四边片 | 面心 |
 
-相比 Gyroid，P/D 多出两个微妙之处：
-
-- P 和 D 的基本片带有内部 2 重对称（跨越两个不对称单元）；管线会检测这
-  个稳定子群并做商，保证没有面被重复输出。
-- 每个操作带有一个定向符号——它是否交换曲面两侧。对 P/D 这与行列式并不
-  相同（它们的对称群包含躺在曲面内的 2 重轴——正常旋转却交换两侧，以及
-  垂直于曲面的镜面——反常操作却保持两侧），所以在推导阶段逐一测定并存入
-  表中。
+圆弧边配对由周期曲线 key 自动发现，不存储配对编号。336 张变换后的三角片在
+三种曲面中都严格得到每组两张的分组。最后通过边邻接遍历统一面定向，不依赖曲面特定
+的定向标志。
 
 立方晶格常数有精确的椭圆积分表达式，与数值积分吻合到 $\sim 10^{-9}$
 （$\kappa = 1$ 积分单位）：
@@ -290,7 +268,8 @@ $$
 
 - `gyroid_macro.py` —— Gyroid 精确积分、三角片自动配对、调和重参数化、焊接、
   定向与拓扑检查。
-- `weierstrass.py` —— 统一入口，以及原有的 P/D 精确生成路径。
+- `bonnet_macro.py` —— P/D 精确积分与自动宏观片配对，复用调和映射与拓扑检查。
+- `weierstrass.py` —— 统一入口与空间群数据。
 - `operators.py` —— `tpms.generate`：构建网格对象和 Array 修改器栈。
 - `properties.py`、`ui.py` —— 参数设置和 N 面板。
 

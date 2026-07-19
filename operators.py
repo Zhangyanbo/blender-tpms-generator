@@ -3,9 +3,9 @@
 Pipeline
 --------
 1. `weierstrass.build_unit_cell` evaluates the exact Enneper-Weierstrass
-   parametrization of the chosen surface.  Gyroid uses 48 paired-triangle
-   macro patches with cached harmonic square coordinates; P and D retain
-   their existing exact patch grids.
+   parametrization of the chosen surface. Circular-edge triangle pairs form
+   genuine macro patches with one cached harmonic square map shared by all
+   three Bonnet associates.
    Every vertex lies on the exact minimal surface and boundary vertices
    match their periodic partners to ~1e-9 of the cell.
 2. Three Array modifiers (X, Y, Z) with vertex merging tile the cell.

@@ -32,16 +32,13 @@ class TPMS_PT_panel(bpy.types.Panel):
         box = layout.box()
         box.label(text="Quality")
         box.prop(p, "quad_subdivisions")
-        patches = {'GYROID': 48, 'SCHWARZ_P': 48, 'SCHWARZ_D': 192}
+        patches = {'GYROID': 48, 'SCHWARZ_P': 24, 'SCHWARZ_D': 96}
         npatch = patches.get(p.tpms_type, 48)
         subdivisions = int(p.quad_subdivisions)
-        if p.tpms_type != 'GYROID':
-            subdivisions = max(2, subdivisions)
         box.label(text=f"{npatch * subdivisions ** 2} quads per cell",
                   icon='MESH_GRID')
-        if p.tpms_type == 'GYROID':
-            box.prop(p, "solver_resolution")
-            box.prop(p, "quadrature_order")
+        box.prop(p, "solver_resolution")
+        box.prop(p, "quadrature_order")
         box.prop(p, "smooth_shade")
 
         layout.separator()
