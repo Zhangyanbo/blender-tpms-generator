@@ -30,6 +30,20 @@ class TPMSProperties(bpy.types.PropertyGroup):
         default='GYROID',
     )
 
+    iso_level: FloatProperty(
+        name="Iso Level",
+        description="Level t of the standard trigonometric field "
+                    "F(x, y, z) = t. 0 keeps the exact minimal surface; "
+                    "other levels shift the surface and change the volume "
+                    "split between the two channels. Usable until the "
+                    "necks pinch: about |t| < 1.3 (Gyroid), "
+                    "|t| < 0.99 (Schwarz P/D)",
+        default=0.0,
+        soft_min=-0.9, soft_max=0.9,
+        min=-1.413, max=1.413,
+        precision=3,
+    )
+
     cell_scale: FloatProperty(
         name="Cell Scale",
         description="World-unit edge length of one cubic TPMS unit cell",

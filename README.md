@@ -72,6 +72,17 @@ cross the unit-cell boundary, so a finite P block has a naturally staggered
 outer skin even though periodic tiling is seamless; use a Boolean cut when a
 flat exterior is required.
 
+### Iso level
+
+**Iso Level** shifts the surface to the level set `F(x, y, z) = t` of the
+standard trigonometric TPMS field, changing how the volume is split between
+the two channels — the parameter familiar from voxel-based TPMS generators.
+At `t = 0` (the default) the mesh stays on the exact minimal surface; other
+levels transport every vertex along the field gradient, so the all-quad
+mesh, the macro-patch layout, and seamless tiling are preserved unchanged.
+Levels are usable until the necks pinch, at about `|t| < 1.3` for Gyroid and
+`|t| < 0.99` for Schwarz P and D.
+
 ## Mathematics
 
 The surfaces follow the exact-computation work of Gandy, Cvijović, Mackay,

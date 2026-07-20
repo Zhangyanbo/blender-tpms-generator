@@ -17,6 +17,10 @@ class TPMS_PT_panel(bpy.types.Panel):
         layout.prop(p, "tpms_type")
 
         box = layout.box()
+        box.label(text="Surface")
+        box.prop(p, "iso_level")
+
+        box = layout.box()
         box.label(text="Lattice")
         box.prop(p, "cell_scale")
 

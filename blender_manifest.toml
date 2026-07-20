@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "tpms_generator"
-version = "2.5.1"
+version = "2.6.0"
 name = "PureQuad TPMS"
 tagline = "Exact parametric TPMS (Gyroid, Schwarz P/D) as clean quad meshes"
 maintainer = "Yanbo Zhang <zhangybspm@gmail.com>"

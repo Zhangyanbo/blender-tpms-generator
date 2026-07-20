@@ -73,10 +73,11 @@ import numpy as np
 from collections import namedtuple
 
 try:
-    from . import bonnet_macro, gyroid_macro
+    from . import bonnet_macro, gyroid_macro, isolevel
 except ImportError:  # Allow pure-Python validation from the repository root.
     import bonnet_macro
     import gyroid_macro
+    import isolevel
 
 # ----------------------------------------------------------------------
 # Constants
@@ -575,7 +576,7 @@ def _fundamental_patch(surf, res):
 # Unit-cell assembly
 # ----------------------------------------------------------------------
 
-def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2):
+def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2, iso_level=0.0):
     """Build one cubic unit cell of an exact TPMS as an all-quad mesh.
 
     Parameters
@@ -585,6 +586,11 @@ def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2):
     cell_size : float -- world edge length of the cubic translational cell.
     res       : int   -- quads per macro-patch edge. G/P/D have
                          48/24/96 * res^2 genuine macro quads.
+    iso_level : float -- level t of the standard trigonometric field
+                         F(x, y, z) = t. 0 keeps the exact minimal surface;
+                         other levels transport every vertex along the field
+                         gradient (see `isolevel`), preserving the quad and
+                         macro-patch structure. |t| < sqrt(2) (G), < 1 (P/D).
 
     Returns
     -------
@@ -593,21 +599,30 @@ def build_unit_cell(tpms_type='GYROID', cell_size=1.0, res=2):
     normals : (V, 3) float64 -- smooth unit normals
     """
     if tpms_type == 'GYROID':
-        return gyroid_macro.build_unit_cell(
-            cell_size=cell_size,
+        built = gyroid_macro.build_unit_cell(
+            cell_size=1.0,
             quad_subdivisions=res,
         )
-
-    surf = SURFACES[tpms_type]
-    if tpms_type in {'SCHWARZ_P', 'SCHWARZ_D'}:
+    elif tpms_type in {'SCHWARZ_P', 'SCHWARZ_D'}:
+        surf = SURFACES[tpms_type]
         reference_patch, _ = _fundamental_patch(surf, 2)
-        return bonnet_macro.build_unit_cell(
+        built = bonnet_macro.build_unit_cell(
             surface_name=tpms_type,
             surface=surf,
             reference_patch=reference_patch,
-            cell_size=cell_size,
+            cell_size=1.0,
             quad_subdivisions=res,
         )
+    else:
+        built = None
+
+    if built is not None:
+        verts, quads, normals = built
+        verts, quads, normals = isolevel.reshape_unit_cell(
+            tpms_type, verts, quads, normals, iso_level=iso_level)
+        return verts * float(cell_size), quads, normals
+
+    surf = SURFACES[tpms_type]
 
     res = max(2, int(res))
     patch, pnorm = _fundamental_patch(surf, res)

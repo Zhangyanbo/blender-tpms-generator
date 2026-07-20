@@ -73,11 +73,16 @@ class TPMS_OT_generate(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.tpms_props
         cs = float(props.cell_scale)
+        iso = float(props.iso_level)
 
         t0 = time.perf_counter()
-        verts, quads, normals = weierstrass.build_unit_cell(
-            tpms_type=props.tpms_type, cell_size=cs,
-            res=int(props.quad_subdivisions))
+        try:
+            verts, quads, normals = weierstrass.build_unit_cell(
+                tpms_type=props.tpms_type, cell_size=cs,
+                res=int(props.quad_subdivisions), iso_level=iso)
+        except (ValueError, RuntimeError) as exc:
+            self.report({'ERROR'}, str(exc))
+            return {'CANCELLED'}
         dt_build = time.perf_counter() - t0
 
         name = f"TPMS_{props.tpms_type.title()}"
@@ -98,10 +103,12 @@ class TPMS_OT_generate(bpy.types.Operator):
         context.view_layer.objects.active = obj
 
         dt = time.perf_counter() - t0
+        shape = (f"level set t = {iso:g}" if iso != 0.0
+                 else "exact minimal surface")
         self.report(
             {'INFO'},
-            f"{name}: {len(verts)}v / {len(quads)} quads, all on the "
-            f"exact minimal surface (build {dt_build:.2f}s, total {dt:.2f}s). "
+            f"{name}: {len(verts)}v / {len(quads)} quads, {shape} "
+            f"(build {dt_build:.2f}s, total {dt:.2f}s). "
             f"Tiled {props.cells_x}x{props.cells_y}x{props.cells_z}."
         )
         return {'FINISHED'}
